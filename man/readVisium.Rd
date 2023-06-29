@@ -14,8 +14,7 @@ readVisium(
   init.backend = TRUE,
   shutdown.backend = TRUE,
   cores = 1,
-  num.spots = -1,
-  verbose = FALSE
+  num.spots = -1
 )
 
 read10Xh5(
@@ -26,8 +25,7 @@ read10Xh5(
   init.backend = TRUE,
   shutdown.backend = TRUE,
   cores = 1,
-  num.spots = -1,
-  verbose = FALSE
+  num.spots = -1
 )
 
 create_tiles(
@@ -38,8 +36,7 @@ create_tiles(
   num.spots = dim(sce)[2],
   init.backend = TRUE,
   shutdown.backend = TRUE,
-  cores = 1,
-  verbose = FALSE
+  cores = 1
 )
 
 counts2h5(dirname)

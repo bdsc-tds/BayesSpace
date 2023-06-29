@@ -1,21 +1,17 @@
 // [[Rcpp::plugins("cpp11")]]
 // [[Rcpp::depends(RcppArmadillo, RcppProgress)]]
-#include "utils.h"
 #include "vips/vips8"
 #include <RcppArmadillo.h>
 #include <cassert>
-#include <chrono>
 #include <cmath>
-#include <csignal>
 #include <filesystem>
-#include <indicators/cursor_control.hpp>
-#include <indicators/progress_bar.hpp>
+#include <progress.hpp>
+#include <progress_bar.hpp>
 #include <string>
 #include <tuple>
+#include <vector>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
+#define assertm(exp, msg) assert(((void) msg, exp))
 
 bool
 is_in_circle(
@@ -102,10 +98,6 @@ prepare_masks(const int width, const int num_bands = 3) {
       width, width, vips::VImage::option()->set("bands", num_bands)
   );
   const int rotated_corner = static_cast<int>((std::sqrt(3) + 1) * width / 4);
-  
-  const std::vector<double> white_pxl(num_bands, 255);
-
-  const std::vector<double> white_pxl(num_bands, 255);
 
   vips::VImage circle, fan_1, fan_2, fan_3, fan_4, fan_5, fan_6;
   circle = ori.copy_memory();
@@ -119,45 +111,45 @@ prepare_masks(const int width, const int num_bands = 3) {
   for (int col = 0; col < width; col++) {
     for (int row = 0; row < width; row++) {
       if (is_in_circle(col, row, width / 2, width / 2, width / 2))
-        circle.draw_rect(white_pxl, col, row, 1, 1);
+        circle.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, width,
               (2 + std::sqrt(3)) * width / 4, 3 * width / 4, width / 2
           ))
-        fan_1.draw_rect(white_pxl, col, row, 1, 1);
+        fan_1.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, width,
               (2 - std::sqrt(3)) * width / 4, 3 * width / 4, width / 2
           ))
-        fan_2.draw_rect(white_pxl, col, row, 1, 1);
+        fan_2.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, 0,
               (2 + std::sqrt(3)) * width / 4, width / 4, width / 2
           ))
-        fan_3.draw_rect(white_pxl, col, row, 1, 1);
+        fan_3.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, 0,
               (2 - std::sqrt(3)) * width / 4, width / 4, width / 2
           ))
-        fan_4.draw_rect(white_pxl, col, row, 1, 1);
+        fan_4.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, (2 + std::sqrt(3)) * width / 4,
               width / 4, (2 + std::sqrt(3)) * width / 4, 3 * width / 4,
               width / 2
           ))
-        fan_5.draw_rect(white_pxl, col, row, 1, 1);
+        fan_5.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, (2 - std::sqrt(3)) * width / 4,
               width / 4, (2 - std::sqrt(3)) * width / 4, 3 * width / 4,
               width / 2
           ))
-        fan_6.draw_rect(white_pxl, col, row, 1, 1);
+        fan_6.draw_rect(255, col, row, 1, 1);
     }
   }
 
@@ -246,23 +238,8 @@ __get_spot_subspot_tiles_from_image(
     const arma::mat &spot_center_coordinates, const double spot_radius_pxl,
     const std::string &fullres_image_file, const std::string &tile_image_dir,
     arma::umat &spot_flatten_images, arma::umat &subspot_flatten_images,
-    std::vector<std::string> &subspot_barcodes, const int thread_num,
-    const bool verbose = false
+    std::vector<std::string> &subspot_barcodes, const int thread_num
 ) {
-  std::vector<int> thread_hits;
-
-#ifdef _OPENMP
-  omp_set_max_active_levels(2);
-  omp_set_num_threads(thread_num);
-
-  for (int i = 0; i < thread_num; i++)
-    thread_hits.emplace_back(0);
-
-  if (verbose) {
-    std::cout << "[DEBUG] The number of threads is " << thread_num << std::endl;
-  }
-#endif
-
   const std::filesystem::path __spot_output_path(
       tile_image_dir / std::filesystem::path("spot")
   );
@@ -288,53 +265,30 @@ __get_spot_subspot_tiles_from_image(
   );
   subspot_barcodes = std::vector<std::string>(6 * barcodes.length());
 
+  // Path to spot and subspot tiles.
+  std::vector<std::tuple<std::string, std::filesystem::path>> tile_paths(7);
+
   // Masks for spot and subspot images.
   const std::vector<std::tuple<vips::VImage, double, int>> masks =
       prepare_masks(2 * __spot_radius_pxl, img.bands());
 
-  // Progree bar.
-  indicators::show_console_cursor(false);
-  indicators::ProgressBar pb{
-      indicators::option::MaxProgress{barcodes.length() - 1},
-      indicators::option::BarWidth{50},
-      indicators::option::Start{" ["},
-      indicators::option::Fill{"█"},
-      indicators::option::Lead{"█"},
-      indicators::option::Remainder{"-"},
-      indicators::option::End{"]"},
-      indicators::option::PrefixText{"Slicing"},
-      indicators::option::ForegroundColor{indicators::Color::blue},
-      indicators::option::ShowElapsedTime{true},
-      indicators::option::ShowRemainingTime{true},
-      indicators::option::FontStyles{
-          std::vector<indicators::FontStyle>{indicators::FontStyle::bold}
-      }
-  };
-
-#pragma omp parallel for
+  Progress p(barcodes.length() - 1, true);
   for (int i = 0; i < barcodes.length(); i++) {
-    pb.tick();
+    if (i % 4 == 0)
+      Rcpp::checkUserInterrupt();
 
-    // Path to spot and subspot tiles.
-    std::vector<std::tuple<std::string, std::filesystem::path>> tile_paths(7);
-
-#ifdef _OPENMP
-#pragma omp atomic update
-    thread_hits[omp_get_thread_num()]++;
-#endif
+    p.increment();
+    if (i % 10 == 0 && Progress::check_abort())
+      return;
 
     if (get_tile_paths(
             static_cast<std::string>(barcodes[i]), __spot_output_path,
             __subspot_output_path, tile_paths
         )) {
       for (int j = 0; j < 7; j++) {
-        if (j > 0) {
-#pragma omp critical
-          {
-            subspot_barcodes[(j - 1) * barcodes.length() + i] =
-                std::get<0>(tile_paths[j]);
-          }
-        }
+        if (j > 0)
+          subspot_barcodes[(j - 1) * barcodes.length() + i] =
+              std::get<0>(tile_paths[j]);
 
         flatten_image(
             vips::VImage::new_from_file(std::get<1>(tile_paths[j]).c_str()),
@@ -366,11 +320,8 @@ __get_spot_subspot_tiles_from_image(
               __spot_radius_pxl
           );
 
-#pragma omp critical
-          {
-            subspot_barcodes[(j - 1) * barcodes.length() + i] =
-                std::get<0>(tile_paths[j]);
-          }
+          subspot_barcodes[(j - 1) * barcodes.length() + i] =
+              std::get<0>(tile_paths[j]);
         }
 
         flatten_image(
@@ -382,14 +333,6 @@ __get_spot_subspot_tiles_from_image(
       }
     }
   }
-
-  indicators::show_console_cursor(true);
-
-#ifdef _OPENMP
-  if (verbose) {
-    print_thread_hits(thread_hits);
-  }
-#endif
 }
 
 // [[Rcpp::export]]
@@ -399,7 +342,7 @@ get_spot_subspot_tiles_from_image(
     const arma::mat &spot_center_coordinates, const double spot_radius_pxl,
     const std::string &fullres_image_file, const std::string &tile_image_dir,
     const bool init_vips = true, const bool shutdown_vips = true,
-    const int thread_num = 1, const bool verbose = false
+    const int thread_num = 1
 ) {
   assertm(
       barcodes.length() == spot_center_coordinates.n_rows,
@@ -417,7 +360,7 @@ get_spot_subspot_tiles_from_image(
   __get_spot_subspot_tiles_from_image(
       barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file,
       tile_image_dir, spot_flatten_images, subspot_flatten_images,
-      subspot_barcodes, thread_num, verbose
+      subspot_barcodes, thread_num
   );
 
   if (shutdown_vips)
