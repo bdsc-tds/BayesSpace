@@ -11,6 +11,10 @@
 #'   \href{https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/output/overview}{10X Genomics help page}.)
 #' @param fname File name of the h5 file. It should be inside \code{dirname}.
 #'   (By default "filtered_feature_bc_matrix.h5")
+#' @param fullres.image Single H&E brightfield image in either TIFF or JPG 
+#'   format; used as input to "spaceranger count".
+#' @param tile.image.dir Path to the directory of tile images.
+#' @param scale.factor.fname File name of the scale factor.
 #'
 #' @return SingleCellExperiment containing the counts matrix in \code{counts}
 #'   and spatial data in \code{colData}. Array coordinates for each spot are
@@ -43,7 +47,9 @@ NULL
 #' @importFrom SingleCellExperiment SingleCellExperiment counts
 #' @importFrom S4Vectors metadata metadata<-
 #' @rdname readVisium
-readVisium <- function(dirname) {
+readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
+                       init.backend = TRUE, shutdown.backend = TRUE,
+                       cores = 1, num.spots = -1) {
     spatial_dir <- file.path(dirname, "spatial")
     matrix_dir <- file.path(dirname, "filtered_feature_bc_matrix")
 
@@ -78,6 +84,27 @@ readVisium <- function(dirname) {
     metadata(sce)$BayesSpace.data <- list()
     metadata(sce)$BayesSpace.data$platform <- "Visium"
     metadata(sce)$BayesSpace.data$is.enhanced <- FALSE
+    
+    if (!is.null(fullres.image)) {
+      if (!file.exists(fullres.image)) {
+        stop("Full resolution image does not exist:\n  ", fullres.image)
+      }
+      
+      scale_factor_fname <- file.path(spatial_dir, "scalefactors_json.json")
+      if (!file.exists(scale_factor_fname)) {
+        stop("Scale factor file does not exist:\n  ", scale_factor_fname)
+      }
+      
+      if(num.spots <= 0) num.spots <- dim(sce)[2]
+      
+      flattened_tiles <- create_tiles(sce, fullres.image, scale_factor_fname,
+                                      tile.image.dir,
+                                      num.spots, init.backend, shutdown.backend,
+                                      cores)
+      
+      metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
+      metadata(sce)$BayesSpace.data$subspot_image <- flattened_tiles$subspot
+    }
 
     sce
 }
@@ -90,7 +117,10 @@ readVisium <- function(dirname) {
 #' @importFrom dplyr %>% group_by mutate select n case_when
 #' @importFrom tibble column_to_rownames
 #' @rdname readVisium
-read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5") {
+read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
+                      fullres.image = NULL, tile.image.dir = NULL,
+                      init.backend = TRUE, shutdown.backend = TRUE,
+                      cores = 1, num.spots = -1) {
     spatial_dir <- file.path(dirname, "spatial")
     h5_file <- file.path(dirname, fname)
 
@@ -155,8 +185,55 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5") {
     metadata(sce)$BayesSpace.data <- list()
     metadata(sce)$BayesSpace.data$platform <- "Visium"
     metadata(sce)$BayesSpace.data$is.enhanced <- FALSE
+    
+    if (!is.null(fullres.image)) {
+      if (!file.exists(fullres.image)) {
+        stop("Full resolution image does not exist:\n  ", fullres.image)
+      }
+      
+      scale_factor_fname <- file.path(spatial_dir, "scalefactors_json.json")
+      if (!file.exists(scale_factor_fname)) {
+        stop("Scale factor file does not exist:\n  ", scale_factor_fname)
+      }
+      
+      if(num.spots <= 0) num.spots <- dim(sce)[2]
+      
+      flattened_tiles <- create_tiles(sce, fullres.image, scale_factor_fname,
+                                      tile.image.dir,
+                                      num.spots, init.backend, shutdown.backend,
+                                      cores)
+      
+      metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
+      metadata(sce)$BayesSpace.data$subspot_image <- flattened_tiles$subspot
+    }
 
     sce
+}
+
+#' @export
+#' @importFrom rjson fromJSON
+#' @rdname readVisium
+create_tiles <- function(sce, fullres.image, scale.factor.fname,
+                         tile.image.dir = NULL, num.spots = dim(sce)[2],
+                         init.backend = TRUE, shutdown.backend = TRUE,
+                         cores = 1) {
+  if (!file.exists(fullres.image)) stop("Full resolution image does not exist:\n", fullres.image)
+  if (!file.exists(scale.factor.fname)) stop("Scale factor file does not exist:\n", scale.factor.fname)
+  
+  if (is.null(tile.image.dir)) tile.image.dir <- tempdir(check = TRUE)
+  
+  .barcodes <- as.vector(colData(sce)[seq_len(num.spots), "barcode"])
+  flattened_tiles <- get_spot_subspot_tiles_from_image(
+    .barcodes,
+    as.matrix(colData(sce)[seq_len(num.spots), c("pxl_col_in_fullres", "pxl_row_in_fullres")]),
+    fromJSON(file = scale.factor.fname)$spot_diameter_fullres / 2,
+    fullres.image, tile.image.dir, init.backend, shutdown.backend, cores
+  )
+  
+  colnames(flattened_tiles$spot) <- .barcodes
+  colnames(flattened_tiles$subspot) <- flattened_tiles$subspot_barcodes
+  
+  flattened_tiles
 }
 
 #' @export
