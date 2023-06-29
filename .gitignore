@@ -63,3 +63,5 @@ docs/
 *.rds
 
 src/indicators
+**/data*/
+**/results*/

@@ -128,6 +128,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// get_spot_subspot_tiles_from_image
+Rcpp::List get_spot_subspot_tiles_from_image(const Rcpp::CharacterVector& barcodes, const arma::mat& spot_center_coordinates, const double spot_radius_pxl, const std::string& fullres_image_file, const std::string& tile_image_dir, const bool init_vips, const bool shutdown_vips, const int thread_num);
+RcppExport SEXP _BayesSpace_get_spot_subspot_tiles_from_image(SEXP barcodesSEXP, SEXP spot_center_coordinatesSEXP, SEXP spot_radius_pxlSEXP, SEXP fullres_image_fileSEXP, SEXP tile_image_dirSEXP, SEXP init_vipsSEXP, SEXP shutdown_vipsSEXP, SEXP thread_numSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::CharacterVector& >::type barcodes(barcodesSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type spot_center_coordinates(spot_center_coordinatesSEXP);
+    Rcpp::traits::input_parameter< const double >::type spot_radius_pxl(spot_radius_pxlSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type fullres_image_file(fullres_image_fileSEXP);
+    Rcpp::traits::input_parameter< const std::string& >::type tile_image_dir(tile_image_dirSEXP);
+    Rcpp::traits::input_parameter< const bool >::type init_vips(init_vipsSEXP);
+    Rcpp::traits::input_parameter< const bool >::type shutdown_vips(shutdown_vipsSEXP);
+    Rcpp::traits::input_parameter< const int >::type thread_num(thread_numSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_spot_subspot_tiles_from_image(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_BayesSpace_iterate", (DL_FUNC) &_BayesSpace_iterate, 12},
@@ -135,6 +153,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesSpace_iterate_t", (DL_FUNC) &_BayesSpace_iterate_t, 12},
     {"_BayesSpace_iterate_t_vvv", (DL_FUNC) &_BayesSpace_iterate_t_vvv, 12},
     {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 19},
+    {"_BayesSpace_get_spot_subspot_tiles_from_image", (DL_FUNC) &_BayesSpace_get_spot_subspot_tiles_from_image, 8},
     {NULL, NULL, 0}
 };
 
