@@ -8,11 +8,11 @@
 ##
 ## And with R 3.4.0, and RcppArmadillo 0.7.960.*, we turn C++11 on as OpenMP
 ## support within Armadillo prefers / requires it
-CXX=clang++
-CXX_STD=CXX17
+#CXX=clang++
+CXX_STD = CXX17
 
-PKG_CXXFLAGS+=`export PKG_CONFIG_PATH="$(PWD)/libvips/build/lib/lib/pkgconfig" && pkg-config --cflags vips-cpp` -Iindicators/include $(SHLIB_OPENMP_CXXFLAGS)
-PKG_LIBS+=`export PKG_CONFIG_PATH="$(PWD)/libvips/build/lib/lib/pkgconfig" && pkg-config --libs vips-cpp` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+PKG_CXXFLAGS += `export PKG_CONFIG_PATH="$(PWD)/libvips/build/lib/lib/pkgconfig" && pkg-config --cflags vips-cpp` $(SHLIB_OPENMP_CXXFLAGS)
+PKG_LIBS += `export PKG_CONFIG_PATH="$(PWD)/libvips/build/lib/lib/pkgconfig" && pkg-config --libs vips-cpp` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
 
-#PKG_CXXFLAGS+=`pkg-config --cflags vips-cpp` -Iindicators/include $(SHLIB_OPENMP_CXXFLAGS)
-#PKG_LIBS+=`pkg-config --libs vips-cpp` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+#PKG_CXXFLAGS += `pkg-config --cflags vips-cpp` $(SHLIB_OPENMP_CXXFLAGS)
+#PKG_LIBS += `pkg-config --libs vips-cpp` $(SHLIB_OPENMP_CXXFLAGS) $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
