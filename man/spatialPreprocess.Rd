@@ -13,10 +13,8 @@ spatialPreprocess(
   log.normalize = TRUE,
   assay.type = "logcounts",
   h2o.max.mem = "5g",
-  h2o.hidden.layer.size = c(8, 8),
   n.PCs.image = 5,
-  BSPARAM = ExactParam(),
-  ...
+  BSPARAM = ExactParam()
 )
 }
 \arguments{
@@ -40,6 +38,11 @@ be omitted if log-normalization previously computed.}
 Leave as "logcounts" unless you explicitly pre-computed a different
 normalization and added it to \code{sce} under another assay. Note that we
 do not recommend running BayesSpace on PCs computed from raw counts.}
+
+\item{h2o.max.mem}{The maximum amount of memory that h2o uses.}
+
+\item{n.PCs.image}{The number of PCs to be extracted from the image (if 
+available).}
 
 \item{h2o.max.mem}{The maximum amount of memory that h2o uses.}
 

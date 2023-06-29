@@ -98,8 +98,6 @@ prepare_masks(const int width, const int num_bands = 3) {
       width, width, vips::VImage::option()->set("bands", num_bands)
   );
   const int rotated_corner = static_cast<int>((std::sqrt(3) + 1) * width / 4);
-  
-  const std::vector<double> white_pxl(num_bands, 255);
 
   vips::VImage circle, fan_1, fan_2, fan_3, fan_4, fan_5, fan_6;
   circle = ori.copy_memory();
@@ -113,45 +111,45 @@ prepare_masks(const int width, const int num_bands = 3) {
   for (int col = 0; col < width; col++) {
     for (int row = 0; row < width; row++) {
       if (is_in_circle(col, row, width / 2, width / 2, width / 2))
-        circle.draw_rect(white_pxl, col, row, 1, 1);
+        circle.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, width,
               (2 + std::sqrt(3)) * width / 4, 3 * width / 4, width / 2
           ))
-        fan_1.draw_rect(white_pxl, col, row, 1, 1);
+        fan_1.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, width,
               (2 - std::sqrt(3)) * width / 4, 3 * width / 4, width / 2
           ))
-        fan_2.draw_rect(white_pxl, col, row, 1, 1);
+        fan_2.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, 0,
               (2 + std::sqrt(3)) * width / 4, width / 4, width / 2
           ))
-        fan_3.draw_rect(white_pxl, col, row, 1, 1);
+        fan_3.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, width / 2, 0,
               (2 - std::sqrt(3)) * width / 4, width / 4, width / 2
           ))
-        fan_4.draw_rect(white_pxl, col, row, 1, 1);
+        fan_4.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, (2 + std::sqrt(3)) * width / 4,
               width / 4, (2 + std::sqrt(3)) * width / 4, 3 * width / 4,
               width / 2
           ))
-        fan_5.draw_rect(white_pxl, col, row, 1, 1);
+        fan_5.draw_rect(255, col, row, 1, 1);
 
       if (is_in_fan(
               col, row, width / 2, width / 2, (2 - std::sqrt(3)) * width / 4,
               width / 4, (2 - std::sqrt(3)) * width / 4, 3 * width / 4,
               width / 2
           ))
-        fan_6.draw_rect(white_pxl, col, row, 1, 1);
+        fan_6.draw_rect(255, col, row, 1, 1);
     }
   }
 
