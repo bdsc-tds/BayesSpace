@@ -1,9 +1,13 @@
 Rcpp::compileAttributes()
+<<<<<<< HEAD
 # devtools::clean_dll()
+=======
+>>>>>>> e013e2a (fix: bugs)
 roxygen2::roxygenise()
 devtools::clean_dll()
 devtools::load_all()
 
+<<<<<<< HEAD
 # Sys.setenv(OMP_NUM_THREADS = 20)
 
 # library(tictoc)
@@ -57,6 +61,14 @@ adjustClusterLabels(sce, 0.2)
 #   save.chain = TRUE, verbose = TRUE, cores = 2,
 #   chain.fname = "__tools/results/adaptive_mcmc/yes.h5"
 # )
+=======
+Sys.setenv(OMP_NUM_THREADS = 20)
+
+# library(tictoc)
+# library(BayesSpace, lib.loc = "/users/skang/R/rocker-rstudio/4.2")
+
+# sce <- readRDS("__tools/results/preprocessed.rds")
+>>>>>>> e013e2a (fix: bugs)
 
 # img.plots <- imageFeaturePlot(sce, datatype = "both", res = "both",
 #                               d = c(pca = 5, vae = 16),
@@ -64,12 +76,25 @@ adjustClusterLabels(sce, 0.2)
 
 # num.spots <- -1
 
+<<<<<<< HEAD
 # sce_img <- readVisium(
 #   "/work/PRTNR/CHUV/DIR/rgottar1/spatial/env/skang/Programming/Git/Xenium_data_exploration/Visium_data/data",
 #   "/work/PRTNR/CHUV/DIR/rgottar1/spatial/Xenium_Preprint_Data/CytAssist_FFPE_Human_Breast_Cancer/tissue_image.tif",
 #   init.backend = TRUE, shutdown.backend = TRUE, num.spots = num.spots, cores = 4)
 
 # sce_2 <- readVisium("__tools/data_2", "__tools/data/tissue_image.tif", "__tools/results_2", FALSE, TRUE, 8, num.spots)
+=======
+# tic()
+# sce <- readVisium(
+#   "/work/PRTNR/CHUV/DIR/rgottar1/spatial/env/skang/Programming/Git/Xenium_data_exploration/Visium_data/data",
+#   "/work/PRTNR/CHUV/DIR/rgottar1/spatial/Xenium_Preprint_Data/CytAssist_FFPE_Human_Breast_Cancer/tissue_image.tif",
+#   init.backend = TRUE, shutdown.backend = TRUE, num.spots = num.spots)
+# toc()
+
+# tic()
+# sce_2 <- readVisium("__tools/data_2", "__tools/data/tissue_image.tif", "__tools/results_2", FALSE, TRUE, 8, num.spots)
+# toc()
+>>>>>>> e013e2a (fix: bugs)
 
 
 # sce_2 <- read10Xh5("__tools/data")
@@ -112,6 +137,7 @@ adjustClusterLabels(sce, 0.2)
 # set.seed(149)
 # sce_enhanced <- spatialEnhance(sce,
 #     q = 15, platform = "Visium",
+<<<<<<< HEAD
 #     use.dimred = list(PCA = seq_len(7)),
 #     subspot.d = c(3, 2),
 #     model = "t", gamma = 3,
@@ -155,9 +181,112 @@ adjustClusterLabels(sce, 0.2)
 #   verbose = TRUE, cores = 4
 # )
 # toc()
+=======
+#     use.dimred = c(PCA = 7),
+#     subspot.d = 3,
+#     model = "t", gamma = 3,
+#     jitter_prior = 0.3, jitter_scale = 3.5,
+#     nrep = 500, burn.in = 50,
+#     save.chain = FALSE, verbose = TRUE, cores = 2
+# )
+
+# library(ggplot2)
+# library(tictoc)
+#
+# nrep <- 10000
+#
+# detach("package:BayesSpace", unload = TRUE)
+# library(BayesSpace, lib.loc = "/Library/Frameworks/R.framework/Versions/4.3-arm64/Resources/library")
+# packageVersion("BayesSpace")
+# set.seed(100)
+# sce_old = spatialPreprocess(
+#   getRDS("2018_thrane_melanoma", "ST_mel1_rep2", cache=FALSE),
+#   platform = "ST",
+#   n.PCs = 7
+# )
+#
+# set.seed(149)
+# sce_old <- spatialCluster(
+#   sce_old, q=4, platform="ST", d=7,
+#   init.method="mclust", model="t", gamma=2,
+#   nrep=1000, burn.in=100, save.chain=FALSE
+# )
+# clusterPlot(sce_old)
+# ggsave("__tools/old.jpg", device = "jpg")
+#
+# set.seed(149)
+# sce_old_enhanced <- spatialEnhance(sce_old, q=4, platform="ST", d=7,
+#                                     model="t", gamma=2,
+#                                     jitter_prior=0.3, jitter_scale=3.5,
+#                                     nrep=nrep, burn.in=100,
+#                                     save.chain=FALSE)
+# clusterPlot(sce_old_enhanced)
+# ggsave("__tools/old_enhanced.jpg", device = "jpg")
+>>>>>>> e013e2a (fix: bugs)
 #
 #
 #
 # detach("package:BayesSpace", unload = TRUE)
 # library(BayesSpace, lib.loc = "/Users/se3594/Rlibs")
 # packageVersion("BayesSpace")
+<<<<<<< HEAD
+=======
+set.seed(100)
+sce_new <- spatialPreprocess(
+  getRDS("2018_thrane_melanoma", "ST_mel1_rep2", cache = FALSE),
+  platform = "ST",
+  n.PCs = 7
+)
+
+set.seed(149)
+sce_new <- spatialCluster(
+  sce_new,
+  q = 4, platform = "ST", d = 7,
+  init.method = "mclust", model = "t", gamma = 2,
+  nrep = 1000, burn.in = 100, save.chain = FALSE
+)
+# clusterPlot(sce_new)
+# ggsave("__tools/new.jpg", device = "jpg")
+
+# tmp <- coreTune(sce_new,
+#   test.cores = c(1, 2, 4, 8, 16), test.times = 2,
+#   q = 4, platform = "ST", d = 7,
+#   model = "t", gamma = 2,
+#   jitter_prior = 0.3, jitter_scale = 3.5,
+#   nrep = 10000, burn.in = 100, verbose = TRUE
+# )
+
+set.seed(149)
+# tic()
+sce_new_enhanced <- spatialEnhance(sce_new,
+  q = 4, platform = "ST", d = 7,
+  model = "t", gamma = 2,
+  jitter_prior = 0.3, jitter_scale = 3.5,
+  nrep = 2000, burn.in = 100,
+  save.chain = FALSE, cores = 2, verbose = TRUE
+)
+# toc()
+clusterPlot(sce_new_enhanced)
+# ggsave("__tools/new_enhanced_1.jpg", device = "jpg")
+
+set.seed(149)
+sce_new_enhanced_2 <- spatialEnhance(sce_new,
+  q = 4, platform = "ST", d = 7,
+  model = "t", gamma = 2,
+  jitter_prior = 0.3, jitter_scale = 3.5,
+  nrep = 2000, burn.in = 100,
+  save.chain = FALSE, cores = 4, verbose = TRUE
+)
+clusterPlot(sce_new_enhanced_2)
+#
+# set.seed(149)
+# tic()
+# sce_new_enhanced_2 <- spatialEnhance(sce_new, q=4, platform="ST", d=7,
+#                                    model="t", gamma=2,
+#                                    jitter_prior=0.3, jitter_scale=3.5,
+#                                    nrep=nrep, burn.in=100,
+#                                    save.chain=FALSE, cores = 4, verbose = TRUE)
+# toc()
+# clusterPlot(sce_new_enhanced_2)
+# ggsave("__tools/new_enhanced_4.jpg", device = "jpg")
+>>>>>>> e013e2a (fix: bugs)
