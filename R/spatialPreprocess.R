@@ -44,6 +44,12 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
                               h2o.max.mem = "5g", n.PCs.image = 5,
                               BSPARAM = ExactParam()) {
   ## Set BayesSpace metadata
+spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
+                              n.PCs=15, n.HVGs=2000, skip.PCA=FALSE,
+                              log.normalize=TRUE, assay.type="logcounts",
+                              h2o.max.mem="5g", n.PCs.image=5,
+                              BSPARAM=ExactParam(), ...) {
+    ## Set BayesSpace metadata
   if (is.null(metadata(sce)$BayesSpace.data)) {
     metadata(sce)$BayesSpace.data <- list()
   }
@@ -52,69 +58,71 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
   # metadata(sce)$BayesSpace.data$use_dimred <- use.dimred
   # metadata(sce)$BayesSpace.data$d <- n.PCs
 
-  ## Run PCA on HVGs, log-normalizing if necessary
-  if (!skip.PCA) {
-    if (log.normalize) {
-      sce <- logNormCounts(sce)
+    ## Run PCA on HVGs, log-normalizing if necessary
+    if (!skip.PCA) {
+        if (log.normalize)
+            sce <- logNormCounts(sce)
+   
+        dec <- modelGeneVar(sce, assay.type=assay.type)
+        top <- getTopHVGs(dec, n=n.HVGs)
+        sce <- runPCA(sce, subset_row=top, ncomponents=n.PCs, 
+                      exprs_values=assay.type, BSPARAM=BSPARAM)
+        rowData(sce)[["is.HVG"]] <- (rownames(sce) %in% top)
     }
-
-    dec <- modelGeneVar(sce, assay.type = assay.type)
-    top <- getTopHVGs(dec, n = n.HVGs)
-    sce <- runPCA(sce,
-      subset_row = top, ncomponents = n.PCs,
-      exprs_values = assay.type, BSPARAM = BSPARAM
-    )
-    rowData(sce)[["is.HVG"]] <- (rownames(sce) %in% top)
-  }
-
-  ## If the H&E image is provided, run VAE and PCA.
-  ## For spot
-  if (!is.null(metadata(sce)$BayesSpace.data$spot_image)) {
-    ## Get features extracted by VAE.
-    metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
-      metadata(sce)$BayesSpace.data$spot_image,
-      h2o.max.mem
-    )
-
-    ## Get rid of the images to save memory.
-    metadata(sce)$BayesSpace.data$spot_image <- NULL
-
-    ## Get PCs from VAE features.
-    reducedDim(sce, "image") <- scater::calculatePCA(
-      metadata(sce)$BayesSpace.data$spot_image_feats,
-      ncomponents = n.PCs.image,
-      ntop = dim(metadata(sce)$BayesSpace.data$spot_image_feats)[1],
-      BSPARAM = BSPARAM
-    )
-  }
-
-  ## For subspot
-  if (!is.null(metadata(sce)$BayesSpace.data$subspot_image)) {
-    ## Get features extracted by VAE.
-    metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
-      metadata(sce)$BayesSpace.data$subspot_image,
-      h2o.max.mem
-    )
-
-    ## Get rid of the images to save memory.
-    metadata(sce)$BayesSpace.data$subspot_image <- NULL
-
-    ## Get PCs from VAE features.
-    reducedDim(sce, "image") <- scater::calculatePCA(
-      metadata(sce)$BayesSpace.data$subspot_image_feats,
-      ncomponents = n.PCs.image,
-      ntop = dim(metadata(sce)$BayesSpace.data$subspot_image_feats)[1],
-      BSPARAM = BSPARAM
-    )
-  }
+    
+    ## If the H&E image is provided, run VAE and PCA.
+    ## For spot
+    if (!is.null(metadata(sce)$BayesSpace.data$spot_image)) {
+      ## Get features extracted by VAE.
+      metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
+        metadata(sce)$BayesSpace.data$spot_image,
+        h2o.max.mem,
+        ...
+      )
+      
+      ## Get rid of the images to save memory.
+      metadata(sce)$BayesSpace.data$spot_image <- NULL
+      
+      ## Get PCs from VAE features.
+      reducedDim(sce, "image") <- scater::calculatePCA(
+        metadata(sce)$BayesSpace.data$spot_image_feats,
+        ncomponents = n.PCs.image,
+        ntop = dim(metadata(sce)$BayesSpace.data$spot_image_feats)[1],
+        BSPARAM = BSPARAM
+      )
+    }
+    
+    ## For subspot
+    if (!is.null(metadata(sce)$BayesSpace.data$subspot_image)) {
+      ## Get features extracted by VAE.
+      metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
+        metadata(sce)$BayesSpace.data$subspot_image,
+        h2o.max.mem,
+        ...
+      )
+      
+      ## Get rid of the images to save memory.
+      metadata(sce)$BayesSpace.data$subspot_image <- NULL
+      
+      ## Get PCs from VAE features.
+      reducedDim(sce, "image") <- scater::calculatePCA(
+        metadata(sce)$BayesSpace.data$subspot_image_feats,
+        ncomponents = n.PCs.image,
+        ntop = dim(metadata(sce)$BayesSpace.data$subspot_image_feats)[1],
+        BSPARAM = BSPARAM
+      )
+    }
 
   sce
 }
 
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures
-extractImageFeatures <- function(images, h2o.max.mem = "5g") {
-  h2o.init(max_mem_size = h2o.max.mem)
-
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
+extractImageFeatures <- function(images, h2o.max.mem="5g", ...) {
+  h2o.init(
+    max_mem_size = h2o.max.mem,
+    ...
+  )
+  
   features <- as.h2o(t(images))
   vae.model <- h2o.deeplearning(
     x = seq_along(features),
@@ -124,9 +132,9 @@ extractImageFeatures <- function(images, h2o.max.mem = "5g") {
     activation = "Tanh"
   )
   img.feats <- t(as.matrix(h2o.deepfeatures(vae.model, features, layer = 1)))
-
-  h2o.shutdown(prompt = F)
-
+  
+  h2o.shutdown(prompt = FALSE)
+  
   colnames(img.feats) <- colnames(images)
   img.feats
 }
