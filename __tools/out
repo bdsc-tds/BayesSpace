@@ -1,0 +1,150 @@
+Loading required package: SingleCellExperiment
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+Loading required package: matrixStats
+
+Attaching package: ‘MatrixGenerics’
+
+The following objects are masked from ‘package:matrixStats’:
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: GenomicRanges
+Loading required package: stats4
+Loading required package: BiocGenerics
+
+Attaching package: ‘BiocGenerics’
+
+The following objects are masked from ‘package:stats’:
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from ‘package:base’:
+
+    anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+    colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+    get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+    match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+    Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
+    table, tapply, union, unique, unsplit, which.max, which.min
+
+Loading required package: S4Vectors
+
+Attaching package: ‘S4Vectors’
+
+The following object is masked from ‘package:utils’:
+
+    findMatches
+
+The following objects are masked from ‘package:base’:
+
+    expand.grid, I, unname
+
+Loading required package: IRanges
+
+Attaching package: ‘IRanges’
+
+The following object is masked from ‘package:tictoc’:
+
+    shift
+
+Loading required package: GenomeInfoDb
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: ‘Biobase’
+
+The following object is masked from ‘package:MatrixGenerics’:
+
+    rowMedians
+
+The following objects are masked from ‘package:matrixStats’:
+
+    anyMissing, rowMedians
+
+Inferred Space Ranger version < V2.0
+
+(process:3864447): VIPS-WARNING **: 11:53:26.089: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:26.094: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:26.094: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:26.094: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:26.094: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:26.094: Unknown field with tag 33560 (0x8318) encountered
+0%   10   20   30   40   50   60   70   80   90   100%
+[----|----|----|----|----|----|----|----|----|----|
+
+(process:3864447): VIPS-WARNING **: 11:53:35.280: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:35.280: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:35.280: Unknown field with tag 33560 (0x8318) encountered
+
+(process:3864447): VIPS-WARNING **: 11:53:35.280: Unknown field with tag 33560 (0x8318) encountered
+**************************************************|
+224.07 sec elapsed
+
+H2O is not running yet, starting it now...
+
+Note:  In case of errors look at the following log files:
+    /tmp/30094785/RtmpcYKfo7/file3af77f29e6aaa2/h2o_skang_started_from_r.out
+    /tmp/30094785/RtmpcYKfo7/file3af77f324a6f5/h2o_skang_started_from_r.err
+
+openjdk version "1.8.0_372"
+OpenJDK Runtime Environment (Zulu 8.70.0.23-CA-linux64) (build 1.8.0_372-b07)
+OpenJDK 64-Bit Server VM (Zulu 8.70.0.23-CA-linux64) (build 25.372-b07, mixed mode)
+
+Starting H2O JVM and connecting: ... Connection successful!
+
+R is connected to the H2O cluster: 
+    H2O cluster uptime:         2 seconds 238 milliseconds 
+    H2O cluster timezone:       Etc/UTC 
+    H2O data parsing timezone:  UTC 
+    H2O cluster version:        3.40.0.4 
+    H2O cluster version age:    2 months and 5 days 
+    H2O cluster name:           H2O_started_from_R_skang_ydg016 
+    H2O cluster total nodes:    1 
+    H2O cluster total memory:   444.42 GB 
+    H2O cluster total cores:    30 
+    H2O cluster allowed cores:  30 
+    H2O cluster healthy:        TRUE 
+    H2O Connection ip:          localhost 
+    H2O Connection port:        50505 
+    H2O Connection proxy:       NA 
+    H2O Internal Security:      FALSE 
+    R Version:                  R version 4.3.1 (2023-06-16) 
+
+  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
+  |                                                                              |                                                                      |   0%  |                                                                              |=======                                                               |  10%  |                                                                              |==============                                                        |  20%  |                                                                              |=====================                                                 |  30%  |                                                                              |============================                                          |  40%  |                                                                              |===================================                                   |  50%  |                                                                              |==========================================                            |  60%  |                                                                              |=================================================                     |  70%  |                                                                              |========================================================              |  80%  |                                                                              |===============================================================       |  90%  |                                                                              |======================================================================| 100%
+  |                                                                              |                                                                      |   0%  |                                                                              |=======================================                               |  56%  |                                                                              |======================================================================| 100%
+  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
+  |                                                                              |                                                                      |   0%  |                                                                              |=======                                                               |  10%  |                                                                              |==============                                                        |  20%  |                                                                              |=====================                                                 |  30%  |                                                                              |============================                                          |  40%  |                                                                              |===================================                                   |  50%  |                                                                              |==========================================                            |  60%  |                                                                              |=================================================                     |  70%  |                                                                              |========================================================              |  80%  |                                                                              |===============================================================       |  90%  |                                                                              |======================================================================| 100%
+  |                                                                              |                                                                      |   0%  |                                                                              |======================================================================| 100%
+Warning messages:
+1: In .h2o.processResponseWarnings(res) :
+  Dropping bad and constant columns: [V1893, V1892, V1891, V34129, V1890, V1897, V46116, V1896, V46117, V1895, V46114, V1894, V46115, V46112, V46113, V1899, V46110, V1898, V46111, V34130, V36793, V36794, V36795, V36796, V36797, V46109, V46107, V46108, V34138, V34137, V34136, V34135, V34134, V34133, V36790, V34132, V36791, V34131, V36792, V46105, V46106, V46103, V46104, V46101, V46102, V46100, V36789, V46130, V47462, V46131, V47461, V47460, V1871, V1870, V1875, V46138, V1874, V46139, V47469, V1873, V46136, V47468, V1872, V46137, V47467, V1879, V46134, V47466, V1878, V46135, V47465, V1877, V46132, V47464, V1876, V46133, V47463, V18901, V34152, V18900, V34151, V18903, V34150, V1869, V18902, V46129, V34159, V34158, V34157, V34156, V34155, V34154, V34153, V46120, V22176, V22177, V1882, V22178, V1881, V1880, V34139, V1886, V18909, V46127, V47459, V1885, V18908, V46128, V47458, V1884, V46125, V47457, V1883, V46126, V47456, V18905, V46123, V1889, V18904, V46124, V1888, V18907, V46121, V1887, V18 [... truncated]
+2: In .h2o.processResponseWarnings(res) :
+  Dropping bad and constant columns: [V1890, V11499, V7178, V7177, V7179, V4901, V4902, V4903, V4904, V4900, V7174, V7173, V7176, V7175, V7170, V7172, V7171, V1882, V1881, V1886, V4912, V1885, V4913, V1884, V4914, V1883, V1889, V1888, V4910, V1887, V4911, V4909, V10198, V4905, V4906, V10199, V4907, V4908, V7181, V7180, V7182, V8488, V8489, V8486, V8487, V11448, V11449, V11446, V11447, V11451, V11452, V11450, V11455, V11456, V11453, V11454, V8484, V8485, V8482, V8483, V8480, V8481, V7167, V8499, V7166, V7169, V8497, V7168, V8498, V11459, V11457, V11458, V11462, V11463, V11460, V11461, V11466, V10136, V11464, V10135, V11465, V7163, V8495, V7162, V8496, V7165, V8493, V7164, V8494, V8491, V8492, V7161, V7160, V8490, V8468, V8469, V8466, V8467, V8464, V8465, V10138, V10137, V10139, V10141, V1827, V10140, V1826, V10143, V1825, V10142, V8462, V8463, V8460, V8461, V8479, V8477, V8478, V8475, V8476, V8473, V8474, V8471, V8472, V8470, V409, V408, V407, V406, V405, V404, V403, V402, V11402, V11403, [... truncated]
