@@ -42,7 +42,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
                               n.PCs=15, n.HVGs=2000, skip.PCA=FALSE,
                               log.normalize=TRUE, assay.type="logcounts",
                               h2o.max.mem="5g", n.PCs.image=5,
-                              BSPARAM=ExactParam()) {
+                              BSPARAM=ExactParam(), ...) {
     ## Set BayesSpace metadata
   if (is.null(metadata(sce)$BayesSpace.data)) {
     metadata(sce)$BayesSpace.data <- list()
@@ -75,7 +75,8 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$spot_image,
-        h2o.max.mem
+        h2o.max.mem,
+        ...
       )
       
       ## Get rid of the images to save memory.
@@ -95,7 +96,8 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$subspot_image,
-        h2o.max.mem
+        h2o.max.mem,
+        ...
       )
       
       ## Get rid of the images to save memory.
@@ -113,9 +115,12 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
     sce
 }
 
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures
-extractImageFeatures <- function(images, h2o.max.mem="5g") {
-  h2o.init(max_mem_size = h2o.max.mem)
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
+extractImageFeatures <- function(images, h2o.max.mem="5g", ...) {
+  h2o.init(
+    max_mem_size = h2o.max.mem,
+    ...
+  )
   
   features <- as.h2o(t(images))
   vae.model <- h2o.deeplearning(x = seq_along(features),
@@ -125,7 +130,7 @@ extractImageFeatures <- function(images, h2o.max.mem="5g") {
                                activation = 'Tanh')
   img.feats <- t(as.matrix(h2o.deepfeatures(vae.model, features, layer = 1)))
   
-  h2o.shutdown(prompt = F)
+  h2o.shutdown(prompt = FALSE)
   
   colnames(img.feats) <- colnames(images)
   img.feats
