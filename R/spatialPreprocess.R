@@ -75,8 +75,8 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$spot_image,
-        h2o.hidden.layer.size,
         h2o.max.mem,
+        h2o.hidden.layer.size,
         ...
       )
       
