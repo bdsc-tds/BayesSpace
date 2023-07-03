@@ -95,11 +95,7 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
       stop("Scale factor file does not exist:\n  ", scale_factor_fname)
     }
 
-    if (num.spots <= 0) {
-      num.spots <- dim(sce)[2]
-    } else {
-      sce <- sce[, seq_len(num.spots)]
-    }
+    if (num.spots <= 0) num.spots <- dim(sce)[2]
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
