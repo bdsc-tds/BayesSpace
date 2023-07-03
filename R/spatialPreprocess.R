@@ -41,7 +41,7 @@
 spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
                               n.PCs=15, n.HVGs=2000, skip.PCA=FALSE,
                               log.normalize=TRUE, assay.type="logcounts",
-                              h2o.max.mem="5g", h2o.hidden.layer.size = c(8, 8),
+                              h2o.max.mem="5g", h2o.hidden.layer.size = 64,
                               n.PCs.image=5, BSPARAM=ExactParam(), ...) {
     ## Set BayesSpace metadata
   if (is.null(metadata(sce)$BayesSpace.data)) {
@@ -101,7 +101,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       metadata(sce)$BayesSpace.data$subspot_image <- NULL
       
       ## Get PCs from VAE features.
-      reducedDim(sce, "image") <- scater::calculatePCA(
+      metadata(sce)$BayesSpace.data$subspot_image_feats_pcs <- scater::calculatePCA(
         metadata(sce)$BayesSpace.data$subspot_image_feats,
         ncomponents = n.PCs.image,
         ntop = dim(metadata(sce)$BayesSpace.data$subspot_image_feats)[1],
@@ -114,7 +114,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
 
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
 extractImageFeatures <- function(images, h2o.max.mem = "5g",
-                                 h2o.hidden.layer.size = c(8, 8), ...) {
+                                 h2o.hidden.layer.size = 64, ...) {
   h2o.init(
     max_mem_size = h2o.max.mem,
     ...
