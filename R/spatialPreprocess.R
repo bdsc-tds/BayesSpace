@@ -117,9 +117,12 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
   sce
 }
 
-#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures
-extractImageFeatures <- function(images, h2o.max.mem = "5g") {
-  h2o.init(max_mem_size = h2o.max.mem)
+#' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
+extractImageFeatures <- function(images, h2o.max.mem = "5g", ...) {
+  h2o.init(
+    max_mem_size = h2o.max.mem,
+    ...
+  )
 
   features <- as.h2o(t(images))
   vae.model <- h2o.deeplearning(
