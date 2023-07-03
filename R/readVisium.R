@@ -95,7 +95,11 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
       stop("Scale factor file does not exist:\n  ", scale_factor_fname)
     }
 
-    if (num.spots <= 0) num.spots <- dim(sce)[2]
+    if (num.spots <= 0) {
+      num.spots <- dim(sce)[2]
+    } else {
+      sce <- sce[, seq_len(num.spots)]
+    }
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
@@ -199,7 +203,11 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
       stop("Scale factor file does not exist:\n  ", scale_factor_fname)
     }
 
-    if (num.spots <= 0) num.spots <- dim(sce)[2]
+    if (num.spots <= 0) {
+      num.spots <- dim(sce)[2]
+    } else {
+      sce <- sce[, seq_len(num.spots)]
+    }
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
