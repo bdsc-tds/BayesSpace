@@ -41,7 +41,7 @@
 spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
                               n.PCs=15, n.HVGs=2000, skip.PCA=FALSE,
                               log.normalize=TRUE, assay.type="logcounts",
-                              h2o.max.mem="5g", h2o.hidden.layer.size = 64,
+                              h2o.max.mem="5g", h2o.hidden.layer.size=64,
                               n.PCs.image=5, BSPARAM=ExactParam(), ...) {
     ## Set BayesSpace metadata
   if (is.null(metadata(sce)$BayesSpace.data)) {
@@ -75,6 +75,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$spot_image,
+        TRUE, FALSE,
         h2o.max.mem,
         h2o.hidden.layer.size,
         ...
@@ -97,6 +98,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$subspot_image,
+        FALSE, TRUE,
         h2o.max.mem,
         h2o.hidden.layer.size,
         ...
@@ -118,22 +120,25 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
 }
 
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
-extractImageFeatures <- function(images, h2o.max.mem = "5g",
-                                 h2o.hidden.layer.size = 64, ...) {
-  h2o.init(
-    max_mem_size = h2o.max.mem,
-    ...
-  )
+extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
+                                 h2o.max.mem = "5g", h2o.hidden.layer.size = 64,
+                                 ...) {
+  if (init)
+    h2o.init(
+      max_mem_size = h2o.max.mem,
+      ...
+    )
   
   features <- as.h2o(t(images))
   vae.model <- h2o.deeplearning(x = seq_along(features),
-                               training_frame = features,
-                               autoencoder = T,
-                               hidden = h2o.hidden.layer.size,
-                               activation = 'Tanh')
+                                training_frame = features,
+                                autoencoder = T,
+                                hidden = h2o.hidden.layer.size,
+                                activation = 'Tanh')
   img.feats <- t(as.matrix(h2o.deepfeatures(vae.model, features, layer = 1)))
   
-  h2o.shutdown(prompt = FALSE)
+  if (shutdown)
+    h2o.shutdown(prompt = FALSE)
   
   colnames(img.feats) <- colnames(images)
   img.feats
