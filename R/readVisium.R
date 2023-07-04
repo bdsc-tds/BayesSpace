@@ -95,7 +95,11 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
       stop("Scale factor file does not exist:\n  ", scale_factor_fname)
     }
 
-    if (num.spots <= 0) num.spots <- dim(sce)[2]
+    if (num.spots <= 0) {
+      num.spots <- dim(sce)[2]
+    } else {
+      sce <- sce[, seq_len(num.spots)]
+    }
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
@@ -230,7 +234,6 @@ create_tiles <- function(sce, fullres.image, scale.factor.fname,
   if (!file.exists(scale.factor.fname)) stop("Scale factor file does not exist:\n", scale.factor.fname)
 
   if (is.null(tile.image.dir)) tile.image.dir <- tempdir(check = TRUE)
-  message(paste0("Tiles are stored in ", tile.image.dir))
 
   .barcodes <- as.vector(colData(sce)[seq_len(num.spots), "barcode"])
   flattened_tiles <- get_spot_subspot_tiles_from_image(
