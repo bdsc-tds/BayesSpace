@@ -140,12 +140,15 @@ extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
     x = seq_along(features),
     training_frame = features,
     autoencoder = T,
-    hidden = 64,
+    reproducible = reproducible, seed = seed,
+    hidden = h2o.hidden.layer.size,
     activation = "Tanh"
   )
   img.feats <- t(as.matrix(h2o.deepfeatures(vae.model, features, layer = 1)))
 
-  h2o.shutdown(prompt = F)
+  if (shutdown) {
+    h2o.shutdown(prompt = F)
+  }
 
   colnames(img.feats) <- colnames(images)
   img.feats
