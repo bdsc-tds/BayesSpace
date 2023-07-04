@@ -103,9 +103,8 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
-      tile.image.dir,
-      num.spots, init.backend, shutdown.backend,
-      cores
+      tile.image.dir, num.spots, init.backend,
+      shutdown.backend, cores
     )
 
     metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
@@ -211,9 +210,8 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
-      tile.image.dir,
-      num.spots, init.backend, shutdown.backend,
-      cores
+      tile.image.dir, num.spots, init.backend,
+      shutdown.backend, cores
     )
 
     metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
@@ -234,6 +232,7 @@ create_tiles <- function(sce, fullres.image, scale.factor.fname,
   if (!file.exists(scale.factor.fname)) stop("Scale factor file does not exist:\n", scale.factor.fname)
 
   if (is.null(tile.image.dir)) tile.image.dir <- tempdir(check = TRUE)
+  message(paste0("Tiles are stored in ", tile.image.dir))
 
   .barcodes <- as.vector(colData(sce)[seq_len(num.spots), "barcode"])
   flattened_tiles <- get_spot_subspot_tiles_from_image(
