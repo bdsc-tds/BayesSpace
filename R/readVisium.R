@@ -103,8 +103,9 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
-      tile.image.dir, num.spots, init.backend,
-      shutdown.backend, cores
+      tile.image.dir,
+      num.spots, init.backend, shutdown.backend,
+      cores
     )
 
     metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
@@ -210,8 +211,9 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
 
     flattened_tiles <- create_tiles(
       sce, fullres.image, scale_factor_fname,
-      tile.image.dir, num.spots, init.backend,
-      shutdown.backend, cores
+      tile.image.dir,
+      num.spots, init.backend, shutdown.backend,
+      cores
     )
 
     metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
