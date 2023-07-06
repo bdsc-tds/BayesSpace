@@ -13,7 +13,7 @@ spatialPreprocess(
   log.normalize = TRUE,
   assay.type = "logcounts",
   h2o.max.mem = "5g",
-  h2o.hidden.layer.size = c(8, 8),
+  h2o.hidden.layer.size = 64,
   n.PCs.image = 5,
   BSPARAM = ExactParam(),
   ...

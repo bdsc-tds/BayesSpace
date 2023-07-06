@@ -9,11 +9,11 @@
 #'   parameter is optional when analyzing SingleCellExperiments processed using
 #'   \code{\link{readVisium}} or \code{\link{spatialPreprocess}}, as this
 #'   information is included in their metadata.
-#' @param use.dimred A named vector with values being numbers of top principal
-#'   components to use from spot-level data when clustering, named after the
-#'   names of several reduced dimensionality results in \code{reducedDims(sce)}.
-#'   They must share the same number of rows and row names. If provided, cluster
-#'   on these features directly.
+#' @param use.dimred A vector of names of several reduced dimensionality
+#'   results in \code{reducedDims(sce)}. If provided, cluster on these
+#'   features directly.
+#' @param d A vector of numbers of top principal components to use when
+#'   clustering. The length of \code{d} must match that of \code{use.dimred}.
 #' @param init Initial cluster assignments for spots.
 #' @param init.method If \code{init} is not provided, cluster the top \code{d}
 #'   PCs with this method to obtain initial cluster assignments.
@@ -118,12 +118,18 @@ cluster <- function(
 #' @export
 #' @rdname spatialCluster
 spatialCluster <- function(
-    sce, q, use.dimred = c(PCA = 15),
+    sce, q, use.dimred = "PCA", d = 15,
     platform = c("Visium", "ST"),
     init = NULL, init.method = c("mclust", "kmeans"),
     model = c("t", "normal"), precision = c("equal", "variable"),
     nrep = 50000, burn.in = 1000, gamma = NULL, mu0 = NULL, lambda0 = NULL,
     alpha = 1, beta = 0.01, save.chain = FALSE, chain.fname = NULL) {
+  if (!all(use.dimred %in% reducedDimNames(sce))) {
+    stop("reducedDim \"", paste0(use.dimred[!(use.dimred %in% reducedDimNames(sce))], collapse = ","), "\" not found in input SCE.")
+  }
+
+  assert_that(length(use.dimred) == length(d))
+
   ## Require at least one iteration and non-negative burn-in
   assert_that(nrep >= 1)
   assert_that(burn.in >= 0)
@@ -132,7 +138,18 @@ spatialCluster <- function(
   }
 
   ## Get PCs
-  Y <- .check_dimred(sce, use.dimred)[[1]]$PCs
+  Y <- do.call(
+    cbind,
+    lapply(
+      seq_len(length(use.dimred)),
+      function(x) {
+        .Y <- reducedDim(sce, use.dimred[x])
+        colnames(.Y) <- paste(use.dimred[x], colnames(.Y), sep = "_")
+        .d <- min(ncol(.Y), d[x])
+        .Y[, seq_len(.d)]
+      }
+    )
+  )
 
   ## If user didn't specify a platform, attempt to parse from SCE metadata
   ## otherwise check against valid options
