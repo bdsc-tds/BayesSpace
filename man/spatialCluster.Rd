@@ -29,11 +29,12 @@ spatialCluster(
 
 \item{q}{The number of clusters.}
 
-\item{use.dimred}{A named list with vectors of numbers of top principal
-components to use from spot-level data when clustering, named after the
-names of several reduced dimensionality results in \code{reducedDims(sce)}
-or \code{metadata(sce)$BayesSpace.data}. They must share the same number
-of rows and row names. If provided, cluster on these features directly.}
+\item{use.dimred}{A vector of names of several reduced dimensionality
+results in \code{reducedDims(sce)}. If provided, cluster on these
+features directly.}
+
+\item{d}{A vector of numbers of top principal components to use when
+clustering. The length of \code{d} must match that of \code{use.dimred}.}
 
 \item{platform}{Spatial transcriptomic platform. Specify 'Visium' for hex
 lattice geometry or 'ST' for square lattice geometry. Specifying this
