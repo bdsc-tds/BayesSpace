@@ -67,46 +67,46 @@ NULL
 #' @keywords internal
 #' @importFrom purrr map
 cluster <- function(
-  Y, q, df_j, init = rep(1, nrow(Y)),
-  model = c("t", "normal"), precision = c("equal", "variable"),
-  mu0 = colMeans(Y), lambda0 = diag(0.01, nrow = ncol(Y)),
-  gamma = 3, alpha = 1, beta = 0.01, nrep = 1000) {
+    Y, q, df_j, init = rep(1, nrow(Y)),
+    model = c("t", "normal"), precision = c("equal", "variable"),
+    mu0 = colMeans(Y), lambda0 = diag(0.01, nrow = ncol(Y)),
+    gamma = 3, alpha = 1, beta = 0.01, nrep = 1000) {
   Y <- as.matrix(Y)
   d <- ncol(Y)
   n <- nrow(Y)
 
   if (length(mu0) != d) {
-      stop("Dimensions of mu0 do not match input data Y.")
+    stop("Dimensions of mu0 do not match input data Y.")
   }
   if (ncol(lambda0) != d) {
-      stop("Dimensions of lambda0 do not match input data Y.")
+    stop("Dimensions of lambda0 do not match input data Y.")
   }
 
   model <- match.arg(model)
   precision <- match.arg(precision)
 
   if (q == 1) {
-      return(list(z = matrix(rep(1, n), nrow = 1)))
+    return(list(z = matrix(rep(1, n), nrow = 1)))
   }
 
   message("Fitting model...")
   if (model == "normal") {
-      if (precision == "equal") {
-          cluster.FUN <- iterate
-      } else if (precision == "variable") {
-          cluster.FUN <- iterate_vvv
-      }
+    if (precision == "equal") {
+      cluster.FUN <- iterate
+    } else if (precision == "variable") {
+      cluster.FUN <- iterate_vvv
+    }
   } else if (model == "t") {
-      if (precision == "equal") {
-          cluster.FUN <- iterate_t
-      } else if (precision == "variable") {
-          cluster.FUN <- iterate_t_vvv
-      }
+    if (precision == "equal") {
+      cluster.FUN <- iterate_t
+    } else if (precision == "variable") {
+      cluster.FUN <- iterate_t_vvv
+    }
   }
 
   cluster.FUN(
-      Y = as.matrix(Y), df_j = df_j, nrep = nrep, n = n, d = d, gamma = gamma,
-      q = q, init = init, mu0 = mu0, lambda0 = lambda0, alpha = alpha, beta = beta
+    Y = as.matrix(Y), df_j = df_j, nrep = nrep, n = n, d = d, gamma = gamma,
+    q = q, init = init, mu0 = mu0, lambda0 = lambda0, alpha = alpha, beta = beta
   )
 }
 
@@ -118,12 +118,12 @@ cluster <- function(
 #' @export
 #' @rdname spatialCluster
 spatialCluster <- function(
-  sce, q, use.dimred = c(PCA = 15),
-  platform = c("Visium", "ST"),
-  init = NULL, init.method = c("mclust", "kmeans"),
-  model = c("t", "normal"), precision = c("equal", "variable"),
-  nrep = 50000, burn.in = 1000, gamma = NULL, mu0 = NULL, lambda0 = NULL,
-  alpha = 1, beta = 0.01, save.chain = FALSE, chain.fname = NULL) {
+    sce, q, use.dimred = c(PCA = 15),
+    platform = c("Visium", "ST"),
+    init = NULL, init.method = c("mclust", "kmeans"),
+    model = c("t", "normal"), precision = c("equal", "variable"),
+    nrep = 50000, burn.in = 1000, gamma = NULL, mu0 = NULL, lambda0 = NULL,
+    alpha = 1, beta = 0.01, save.chain = FALSE, chain.fname = NULL) {
   ## Require at least one iteration and non-negative burn-in
   assert_that(nrep >= 1)
   assert_that(burn.in >= 0)
