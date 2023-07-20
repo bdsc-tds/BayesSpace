@@ -126,17 +126,15 @@ Mode <- function(x) {
 #' @keywords internal
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
-#' @importFrom S4Vectors metadata metadata<-
 #' @importFrom purrr imap compact
 #' @importFrom stats cov
 #' @importFrom magrittr %>%
 .prepare_inputs <- function(
     sce, subspots, use.dimred = c(PCA = 15), use.subspot.dimred = NULL,
-    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,
+    jitter_prior = 0.3, init = NULL,
     init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
     position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
-    radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
-    verbose = FALSE) {
+    radius = NULL, xdist = NULL, ydist = NULL, verbose = FALSE) {
   inputs <- list()
 
   ## PCs on spot-level (to be enhanced)
@@ -194,19 +192,16 @@ Mode <- function(x) {
   .positions[, "x"] <- .positions[, "x"] + shift_long[, "Var1"]
   .positions[, "y"] <- .positions[, "y"] + shift_long[, "Var2"]
 
-  ## Calculate neighbors.
-  if (calc.neighbors) {
-    dist <- max(rowSums(abs(shift))) * 1.05
-    if (subspots == 9) {
-      dist <- dist / 2
-    }
-
-    if (verbose) {
-      message("Calculating neighbors...")
-    }
-
-    inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
+  ## Compute neighbors.
+  dist <- max(rowSums(abs(shift))) * 1.05
+  if (subspots == 9) {
+    dist <- dist / 2
   }
+
+  if (verbose) {
+    message("Calculating neighbors...")
+  }
+  inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
 
   # Prepare colData for subspots
   .cdata <- .prepare_subspot_coldata(.positions, sce, subspots)
@@ -222,26 +217,24 @@ Mode <- function(x) {
   }
 
   ## Initialize cluster assignments (use spatialCluster by default)
-  if (calc.init) {
-    if (is.null(init)) {
-      if (verbose) {
-        message("Initializing clusters...")
-      }
-
-      init.method <- match.arg(init.method)
-      if (init.method == "spatialCluster") {
-        msg <- paste0(
-          "Must run spatialCluster on sce before enhancement ",
-          "if using spatialCluster to initialize."
-        )
-        assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
-        init <- sce$spatial.cluster
-      } else {
-        init <- .init_cluster(inputs$PCs, q, init, init.method)
-      }
+  if (is.null(init)) {
+    if (verbose) {
+      message("Initializing clusters...")
     }
-    inputs$init <- rep(init, subspots)
+
+    init.method <- match.arg(init.method)
+    if (init.method == "spatialCluster") {
+      msg <- paste0(
+        "Must run spatialCluster on sce before enhancement ",
+        "if using spatialCluster to initialize."
+      )
+      assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
+      init <- sce$spatial.cluster
+    } else {
+      init <- .init_cluster(inputs$PCs, q, init, init.method)
+    }
   }
+  inputs$init <- rep(init, subspots)
 
   ## Create an SCE object for subspot
   colnames(.PCs2enhance) <- vapply(
@@ -266,11 +259,6 @@ Mode <- function(x) {
       "image" = .PCs2fix
     ))
   )
-
-  # Add metadata to new SingleCellExperiment object
-  metadata(inputs$sce)$BayesSpace.data <- list()
-  metadata(inputs$sce)$BayesSpace.data$platform <- platform
-  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
 
   inputs
 }

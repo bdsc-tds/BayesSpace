@@ -166,10 +166,18 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     xdist <- ydist <- 1
   }
 
-  inputs <- .prepare_inputs(sce,
-    use.dimred = use.dimred, d = d,
+  subspots <- ifelse(platform == "Visium", 6, 9)
+
+  ## Prepare for inputs
+  inputs <- .prepare_inputs(
+    sce,
+    subspots = subspots,
+    use.dimred = use.dimred,
+    use.subspot.dimred = c(subspot_image_feats_pcs = subspot.d),
+    jitter_prior = jitter_prior,
+    init = init, init.method = init.method,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
+    xdist = xdist, ydist = ydist, verbose = verbose
   )
 
   ## Set model parameters
@@ -188,18 +196,20 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     }
   }
 
-  ## Deconvolve
-  if (verbose) {
-    message("Fitting model...")
-  }
+  deconv <- deconvolve(inputs$PCs, inputs$positions,
+    nrep = nrep, gamma = gamma,
+    xdist = inputs$xdist, ydist = inputs$ydist, q = q, init = init, model = model,
+    platform = platform, verbose = verbose, jitter_scale = jitter_scale,
+    jitter_prior = jitter_prior, mu0 = mu0, lambda0 = lambda0, alpha = alpha,
+    beta = beta, cores = cores
+  )
 
-  deconv <- iterate_deconv(
-    Y = inputs$PCs, df_j = inputs$df_j, tdist = (model == "t"), nrep = nrep,
-    n = nrow(inputs$PCs), n0 = nrow(inputs$PCs) / subspots,
-    d = inputs$d2enhance, d_subspot = ncol(inputs$PCs) - inputs$d2enhance,
-    gamma = gamma, q = q, init = inputs$init, subspots = subspots,
-    verbose = verbose, jitter_scale = jitter_scale, c = inputs$c, mu0 = mu0,
-    lambda0 = lambda0, alpha = alpha, beta = beta, thread_num = cores
+  ## Create enhanced SCE
+  n_subspots_per <- ifelse(platform == "Visium", 6, 9)
+  cdata <- .make_subspot_coldata(deconv$positions, sce, n_subspots_per)
+  enhanced <- SingleCellExperiment(
+    assays = list(),
+    rowData = rowData(sce), colData = cdata
   )
 
   ## Scale burn.in period to thinned intervals, and
@@ -231,7 +241,12 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     metadata(inputs$sce)$chain.h5 <- .write_chain(deconv, chain.fname, params)
   }
 
-  inputs$sce
+  ## Add metadata to new SingleCellExperiment object
+  metadata(enhanced)$BayesSpace.data <- list()
+  metadata(enhanced)$BayesSpace.data$platform <- platform
+  metadata(enhanced)$BayesSpace.data$is.enhanced <- TRUE
+
+  enhanced
 }
 
 #' @export
