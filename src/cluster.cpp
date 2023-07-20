@@ -625,14 +625,16 @@ iterate_t_vvv(
 /**
  * @brief
  *
- * @param Y the initialized principal components (num_subspots * num_pcs)
+ * @param Y the initialized principal components (num_subspots * (d +
+ * d_subspot))
  * @param df_j the indicies of neighbors of each spot (indices adjusted to
  * 0-based)
  * @param tdist whether to use multivariate t distribution or not
  * @param nrep the number of MCMC iterations
  * @param n the number of subspots (after deconvolution)
  * @param n0 the number of spots (before deconvolution)
- * @param d the number of PCs
+ * @param d the number of PCs to enhance
+ * @param d_subspot the number of PCs already on subspot-level
  * @param gamma smoothing parameter
  * @param q the number of clusters
  * @param init the initialized clustering of subspots
@@ -653,11 +655,15 @@ iterate_t_vvv(
 // [[Rcpp::export]]
 List
 iterate_deconv(
-    arma::mat Y, List df_j, bool tdist, int nrep, int n, int n0, int d,
-    double gamma, int q, arma::uvec init, int subspots, bool verbose,
-    double jitter_scale, double c, NumericVector mu0, arma::mat lambda0,
-    double alpha, double beta, int thread_num = 1
+    arma::mat &Y, const List &df_j, const bool tdist, const int nrep,
+    const int n, const int n0, const int d, const int d_subspot,
+    const double gamma, const int q, const arma::uvec &init, const int subspots,
+    const bool verbose, const double jitter_scale, const double c,
+    const NumericVector &mu0, const arma::mat &lambda0, const double alpha,
+    const double beta, const int thread_num = 1
 ) {
+  const int d_total = d + d_subspot;
+
   std::vector<int> thread_hits;
 
 #ifdef _OPENMP
@@ -675,14 +681,14 @@ iterate_deconv(
   // Initalize matrices storing iterations
   const mat Y0        = Y.rows(0, n0 - 1);   // The input PCs on spot level.
   mat Y_new           = mat(Y.n_rows,
-                            Y.n_cols);   // The proposed PCs on subspot level.
-  uvec z_new          = uvec(n);         // The proposed zs on subspot level.
-  vec acceptance_prob = vec(n);   // The probability of accepting the proposals
-                                  // on subspot level.
+                            d);    // The proposed PCs on subspot level.
+  uvec z_new          = uvec(n);   // The proposed zs on subspot level.
+  vec acceptance_prob = vec(n);    // The probability of accepting the proposals
+                                   // on subspot level.
   DoubleStatesVector<double> log_likelihoods(n
   );   // The log-likelihoods on subspot level.
   umat df_sim_z(nrep / 100 + 1, n, fill::zeros);
-  mat df_sim_mu(nrep, d * q, fill::zeros);
+  mat df_sim_mu(nrep, d_total * q, fill::zeros);
   List df_sim_lambda(nrep / 100 + 1);
   List df_sim_Y(nrep / 100 + 1);
   mat df_sim_w(nrep / 100 + 1, n);
@@ -692,11 +698,11 @@ iterate_deconv(
   // Initialize parameters
   df_sim_mu.row(0) = rowvec(rep(mu0, q));
   df_sim_lambda[0] = lambda0;
-  const mat Vinv   = diagmat(vec(d, fill::value(beta)));
+  const mat Vinv   = diagmat(vec(d_total, fill::value(beta)));
   mat lambda_i     = lambda0;
   df_sim_z.row(0)  = init.t();
   uvec z           = init;
-  df_sim_Y[0]      = Y;
+  df_sim_Y[0]      = Y.cols(0, d - 1);
   vec w            = ones<vec>(n);
   df_sim_w.row(0)  = w.t();
   std::vector<Neighbor> neighbors;
@@ -704,16 +710,20 @@ iterate_deconv(
 
   // Iterate
   const colvec mu0vec = as<colvec>(mu0);
-  mat mu_i(q, d);
-  mat mu_i_long(n, d);
+  mat mu_i(q, d_total);
+  mat mu_i_long(n, d_total);
   uvec j0_vector;
   if (subspots == 6) {
     j0_vector = {0, 1, 2, 3, 4, 5};
   } else {
     j0_vector = {0, 1, 2, 3, 4, 5, 6, 7, 8};
   }
+  uvec d_vector(d);
+  for (int i = 0; i < d; i++) {
+    d_vector(i) = i;
+  }
   mat error(n, d);
-  const double w_alpha     = (d + 4) / 2;   // shape parameter
+  const double w_alpha     = (d_total + 4) / 2;   // shape parameter
   const IntegerVector qvec = seq_len(q);
   const vec zero_vec       = zeros<vec>(d);
   const vec one_vec        = ones<vec>(d);
@@ -808,7 +818,8 @@ iterate_deconv(
 #endif
 
         const mat Y_j_prev = Y.rows(j0_vector * n0 + j0);
-        mat error_j        = error.rows(j0_vector * n0 + j0);
+        mat Y_j_new(subspots, d_total);
+        mat error_j = error.rows(j0_vector * n0 + j0);
 
         if (jitter_scale == 0.0) {
           for (int r = 0; r < subspots; r++) {
@@ -825,10 +836,14 @@ iterate_deconv(
           error_j.row(r) = error_j.row(r) - error_mean;
         }
 
-        const mat Y_j_new = Y_j_prev + error_j;
-        const mat mu_i_j  = mu_i_long.rows(j0_vector * n0 + j0);
-        vec p_prev        = {0.0};
-        vec p_new         = {0.0};
+        // Only update the first d PCs.
+        Y_j_new.cols(0, d - 1) = Y_j_prev.cols(0, d - 1) + error_j;
+        if (d < d_total)
+          Y_j_new.cols(d, d_total - 1) = Y_j_prev.cols(d, d_total - 1);
+
+        const mat mu_i_j = mu_i_long.rows(j0_vector * n0 + j0);
+        vec p_prev       = {0.0};
+        vec p_new        = {0.0};
         for (int r = 0; r < subspots; r++) {
           p_prev += dmvnrm_prec_arma_fast(
                         Y_j_prev.row(r), mu_i_j.row(r),
@@ -848,7 +863,7 @@ iterate_deconv(
 #pragma omp critical(iter_y)
         {
           acceptance_prob(j0)             = probY_j;
-          Y_new.rows(j0_vector * n0 + j0) = Y_j_new;
+          Y_new.rows(j0_vector * n0 + j0) = Y_j_new.cols(0, d - 1);
         }
       }
 
@@ -856,8 +871,7 @@ iterate_deconv(
       {
         int updateCounter = 0;
 
-        // Accept or reject proposals of Y; update w; propose new values for
-        // z.
+        // Accept or reject proposals of Y; update w; propose new values for z.
         for (int j0 = 0; j0 < n0; j0++) {
           const IntegerVector Ysample = {0, 1};
           const NumericVector probsY  = {
@@ -865,7 +879,8 @@ iterate_deconv(
           };
           const int yesUpdate = sample(Ysample, 1, true, probsY)[0];
           if (yesUpdate == 1) {
-            Y.rows(j0_vector * n0 + j0) = Y_new.rows(j0_vector * n0 + j0);
+            Y.rows(j0_vector * n0 + j0, d_vector) =
+                Y_new.rows(j0_vector * n0 + j0);
 
             num_accepts[j0]++;
             updateCounter++;
@@ -962,7 +977,7 @@ iterate_deconv(
         // Save samples for every 100 iterations.
         if ((i + 1) % 100 == 0) {
           df_sim_lambda[(i + 1) / 100] = lambda_i;
-          df_sim_Y[(i + 1) / 100]      = Y;
+          df_sim_Y[(i + 1) / 100]      = Y.cols(0, d - 1);
           df_sim_w.row((i + 1) / 100)  = w.t();
           df_sim_z.row((i + 1) / 100)  = z.t();
         }
