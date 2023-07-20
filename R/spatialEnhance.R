@@ -169,23 +169,8 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
   inputs <- .prepare_inputs(sce,
     use.dimred = use.dimred, d = d,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist
+    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
   )
-
-  ## Initialize cluster assignments (use spatialCluster by default)
-  if (is.null(init)) {
-    init.method <- match.arg(init.method)
-    if (init.method == "spatialCluster") {
-      msg <- paste0(
-        "Must run spatialCluster on sce before enhancement ",
-        "if using spatialCluster to initialize."
-      )
-      assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
-      init <- sce$spatial.cluster
-    } else {
-      init <- .init_cluster(inputs$PCs, q, init, init.method)
-    }
-  }
 
   ## Set model parameters
   model <- match.arg(model)
@@ -245,11 +230,6 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     params <- c("z", "mu", "lambda", "weights", "Y", "Ychange", "plogLik")
     metadata(inputs$sce)$chain.h5 <- .write_chain(deconv, chain.fname, params)
   }
-
-  ## Add metadata to new SingleCellExperiment object
-  metadata(inputs$sce)$BayesSpace.data <- list()
-  metadata(inputs$sce)$BayesSpace.data$platform <- platform
-  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
 
   inputs$sce
 }
