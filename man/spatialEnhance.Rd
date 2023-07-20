@@ -9,8 +9,8 @@ spatialEnhance(
   sce,
   q,
   platform = c("Visium", "ST"),
-  use.dimred = "PCA",
-  d = 15,
+  use.dimred = c(PCA = 15),
+  subspot.d = 5,
   init = NULL,
   init.method = c("spatialCluster", "mclust", "kmeans"),
   model = c("t", "normal"),
@@ -43,10 +43,14 @@ parameter is optional when analyzing SingleCellExperiments processed using
 \code{\link{spatialCluster}}, as this information is included in their
 metadata.}
 
-\item{use.dimred}{Name of a reduced dimensionality result in
-\code{reducedDims(sce)}. If provided, cluster on these features directly.}
+\item{use.dimred}{A named vector with values being numbers of top principal
+components to use from spot-level data when enhancing, named after the
+names of several reduced dimensionality results in \code{reducedDims(sce)}.
+They must share the same number of rows and row names.}
 
-\item{d}{Number of top principal components to use when clustering.}
+\item{subspot.d}{The number of top principal components from the
+corresponding H&E image to use during the clustering on the subspot-level,
+if such data is available (by default 5; ignored if no such data).}
 
 \item{init}{Initial cluster assignments for spots.}
 
@@ -98,6 +102,9 @@ the latter case, a list of values (power of 2) will be created}
 \item{test.times}{Times to repeat the benchmarking with microbenchmark.}
 
 \item{...}{Arguments for \code{spatialEnhance} (except for cores).}
+
+\item{d}{A vector of numbers of top principal components to use when
+clustering. The length of \code{d} must match that of \code{use.dimred}.}
 }
 \value{
 \code{spatialEnhance} returns a new SingleCellExperiment object.

@@ -7,15 +7,13 @@
 .init_cluster(Y, q, init = NULL, init.method = c("mclust", "kmeans"))
 }
 \arguments{
+\item{Y}{PCs}
+
 \item{q}{Number of clusters}
 
 \item{init}{Vector of initial cluster assignments}
 
 \item{init.method}{Initialization clustering algorithm}
-
-\item{sce}{SingleCellExperiment}
-
-\item{inputs}{Results from \code{.prepare_inputs()}}
 }
 \value{
 Vector of cluster assignments.
