@@ -7,7 +7,7 @@
 spatialCluster(
   sce,
   q,
-  use.dimred = list(PCA = seq_len(15)),
+  use.dimred = c(PCA = 15),
   platform = c("Visium", "ST"),
   init = NULL,
   init.method = c("mclust", "kmeans"),
@@ -29,12 +29,11 @@ spatialCluster(
 
 \item{q}{The number of clusters.}
 
-\item{use.dimred}{A vector of names of several reduced dimensionality
-results in \code{reducedDims(sce)}. If provided, cluster on these
-features directly.}
-
-\item{d}{A vector of numbers of top principal components to use when
-clustering. The length of \code{d} must match that of \code{use.dimred}.}
+\item{use.dimred}{A named vector with values being numbers of top principal
+components to use from spot-level data when clustering, named after the
+names of several reduced dimensionality results in \code{reducedDims(sce)}.
+They must share the same number of rows and row names. If provided, cluster
+on these features directly.}
 
 \item{platform}{Spatial transcriptomic platform. Specify 'Visium' for hex
 lattice geometry or 'ST' for square lattice geometry. Specifying this

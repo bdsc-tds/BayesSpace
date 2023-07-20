@@ -795,19 +795,6 @@ iterate_deconv(
         mat Y_j_new(subspots, d_total);
         mat error_j = error.rows(j0_vector * n0 + j0);
 
-        if (i > 10 && j0 == 0) {
-          std::cout << "i = " << i << ":\n" << adaptive_mtx[0] << std::endl;
-        }
-
-        if (jitter_scale == 0.0) {
-          for (int r = 0; r < subspots; r++) {
-            error_j.row(r) = trans(
-                adaptive_mtx[r * n0 + j0] *
-                resize(error_j.row(r), error_j.n_cols, 1)
-            );
-          }
-        }
-
         // Make sure that the sum of the error terms is zero.
         const rowvec error_mean = sum(error_j, 0) / subspots;
         for (int r = 0; r < subspots; r++) {
@@ -859,8 +846,6 @@ iterate_deconv(
           if (yesUpdate == 1) {
             Y.rows(j0_vector * n0 + j0, d_vector) =
                 Y_new.rows(j0_vector * n0 + j0);
-
-            num_accepts[j0]++;
             updateCounter++;
           } else
             num_rejects[j0]++;
@@ -955,6 +940,7 @@ iterate_deconv(
         // Save samples for every 100 iterations.
         if ((i + 1) % 100 == 0) {
           df_sim_lambda[(i + 1) / 100] = lambda_i;
+          df_sim_Y[(i + 1) / 100]      = Y.cols(0, d - 1);
           df_sim_Y[(i + 1) / 100]      = Y.cols(0, d - 1);
           df_sim_w.row((i + 1) / 100)  = w.t();
           df_sim_z.row((i + 1) / 100)  = z.t();

@@ -10,15 +10,15 @@
 #'   \code{\link{readVisium}}, \code{\link{spatialPreprocess}}, or
 #'   \code{\link{spatialCluster}}, as this information is included in their
 #'   metadata.
-#' @param use.dimred A named list with vectors of numbers of top principal
-#'   components to use from spot-level data when clustering, named after the
-#'   names of several reduced dimensionality results in \code{reducedDims(sce)}
-#'   or \code{metadata(sce)$BayesSpace.data}. They must share the same number
-#'   of rows and row names. If provided, cluster on these features directly.
-#' @param subspot.d A vector of principal components from the corresponding H&E
-#'   image to use during the clustering on the subspot-level, if such data is
-#'   available (by default \code{seq_len(5)}; set to \code{NULL} or \code{0}
-#'   if no such data).
+#' @param use.dimred A named vector with values being numbers of top principal
+#'   components to use from spot-level data when enhancing, named after the
+#'   names of several reduced dimensionality results in \code{reducedDims(sce)}.
+#'   They must share the same number of rows and row names.
+#' @param subspot.d The number of top principal components from the
+#'   corresponding H&E image to use during the clustering on the subspot-level,
+#'   if such data is available (by default 5; ignored if no such data).
+#' @param d A vector of numbers of top principal components to use when
+#'   clustering. The length of \code{d} must match that of \code{use.dimred}.
 #' @param init Initial cluster assignments for spots.
 #' @param init.method If \code{init} is not provided, cluster the top \code{d}
 #'   PCs with this method to obtain initial cluster assignments.
@@ -134,7 +134,7 @@ NULL
 #' @importFrom SummarizedExperiment rowData
 #' @importFrom assertthat assert_that
 spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
-                           use.dimred = list(PCA = seq_len(15)), subspot.d = seq_len(5),
+                           use.dimred = c(PCA = 15), subspot.d = 5,
                            init = NULL, init.method = c("spatialCluster", "mclust", "kmeans"),
                            model = c("t", "normal"), nrep = 200000, gamma = NULL,
                            mu0 = NULL, lambda0 = NULL, alpha = 1, beta = 0.01,
@@ -144,8 +144,6 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
   assert_that(burn.in >= 0)
   if (burn.in >= nrep) {
     stop("Please specify a burn-in period shorter than the total number of iterations.")
-  } else if (burn.in < 1) {
-    burn.in <- as.integer(nrep * burn.in)
   }
 
   ## Thinning interval; only every 100 iterations are kept to reduce memory
@@ -168,19 +166,26 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     xdist <- ydist <- 1
   }
 
-  subspots <- ifelse(platform == "Visium", 6, 9)
-
-  ## Prepare for inputs
-  inputs <- .prepare_inputs(
-    sce,
-    subspots = subspots,
-    use.dimred = use.dimred,
-    use.subspot.dimred = list(subspot_image_feats_pcs = subspot.d),
-    jitter_prior = jitter_prior,
-    init = init, init.method = init.method,
+  inputs <- .prepare_inputs(sce,
+    use.dimred = use.dimred, d = d,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
+    xdist = xdist, ydist = ydist
   )
+
+  ## Initialize cluster assignments (use spatialCluster by default)
+  if (is.null(init)) {
+    init.method <- match.arg(init.method)
+    if (init.method == "spatialCluster") {
+      msg <- paste0(
+        "Must run spatialCluster on sce before enhancement ",
+        "if using spatialCluster to initialize."
+      )
+      assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
+      init <- sce$spatial.cluster
+    } else {
+      init <- .init_cluster(inputs$PCs, q, init, init.method)
+    }
+  }
 
   ## Set model parameters
   model <- match.arg(model)
@@ -236,11 +241,15 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
   inputs$sce$spatial.cluster <- unname(labels)
 
   if (save.chain) {
-    deconv$d2enhance <- inputs$d2enhance
     deconv <- .clean_chain(deconv, method = "enhance")
     params <- c("z", "mu", "lambda", "weights", "Y", "Ychange", "plogLik")
     metadata(inputs$sce)$chain.h5 <- .write_chain(deconv, chain.fname, params)
   }
+
+  ## Add metadata to new SingleCellExperiment object
+  metadata(inputs$sce)$BayesSpace.data <- list()
+  metadata(inputs$sce)$BayesSpace.data$platform <- platform
+  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
 
   inputs$sce
 }

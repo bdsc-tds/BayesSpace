@@ -126,26 +126,20 @@ Mode <- function(x) {
 #' @keywords internal
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
-#' @importFrom S4Vectors metadata metadata<-
 #' @importFrom purrr imap compact
 #' @importFrom stats cov
 #' @importFrom magrittr %>%
 .prepare_inputs <- function(
-    sce, subspots, use.dimred = list(PCA = seq_len(15)), use.subspot.dimred = NULL,
-    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,
+    sce, subspots, use.dimred = c(PCA = 15), use.subspot.dimred = NULL,
+    jitter_prior = 0.3, init = NULL,
     init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
     position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
-    radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
-    verbose = FALSE) {
+    radius = NULL, xdist = NULL, ydist = NULL, verbose = FALSE) {
   inputs <- list()
 
   ## PCs on spot-level (to be enhanced)
   spotPCs <- .check_dimred(sce, use.dimred)[[1]]
-  inputs$d2enhance <- sum(vapply(
-    names(spotPCs$name),
-    function(x) length(spotPCs$name[[x]]),
-    FUN.VALUE = integer(1)
-  ))
+  inputs$d2enhance <- sum(spotPCs$name)
 
   ## PCs on subspot-level (fixed)
   subspotPCs <- .check_dimred(sce, use.subspot.dimred)
@@ -425,7 +419,7 @@ getRDS <- function(dataset, sample, cache = TRUE) {
 #' @return A list of combined reducedDim features
 #'
 #' @keywords internal
-#' @importFrom purrr keep discard compact
+#' @importFrom purrr discard
 .check_dimred <- function(sce, name) {
   ret <- list()
 
@@ -438,47 +432,12 @@ getRDS <- function(dataset, sample, cache = TRUE) {
     )
   }
 
-  reduced_dim <- compact(sapply(
-    names(name),
-    function(x) {
-      if (x %in% reducedDimNames(sce)) {
-        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0)) {
-          return(0)
-        }
+  name <- name[name > 0]
 
-        if (length(name[[x]]) == 1 && name[[x]] == -1) {
-          return(seq_len(dim(reducedDim(sce, x))[2]))
-        }
-
-        return(keep(name[[x]], function(y) y <= dim(reducedDim(sce, x))[2]))
-      }
-
-      NULL
-    },
-    simplify = FALSE
-  ))
+  reduced_dim <- name[names(name)[names(name) %in% reducedDimNames(sce)]]
   left_over <- discard(names(name), function(x) x %in% names(reduced_dim))
-  names(left_over) <- left_over
 
-  metadata <- compact(sapply(
-    left_over,
-    function(x) {
-      if (x %in% names(metadata(sce)[["BayesSpace.data"]])) {
-        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0)) {
-          return(0)
-        }
-
-        if (length(name[[x]]) == 1 && name[[x]] == -1) {
-          return(seq_len(dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
-        }
-
-        return(keep(name[[x]], function(y) y <= dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
-      }
-
-      NULL
-    },
-    simplify = FALSE
-  ))
+  metadata <- name[left_over[left_over %in% names(metadata(sce)[["BayesSpace.data"]])]]
   left_over <- discard(left_over, function(x) x %in% names(metadata))
 
   if (!is.null(reduced_dim) && length(reduced_dim) > 0) {
@@ -503,38 +462,30 @@ getRDS <- function(dataset, sample, cache = TRUE) {
   }
 
   if (length(ret) > 0) {
-    ret <- discard(
-      sapply(
-        names(ret),
-        function(x) {
-          c(
-            ret[[x]],
-            list(
-              PCs = do.call(
-                cbind,
-                lapply(
-                  names(ret[[x]]$name),
-                  function(y) {
-                    if (is.null(ret[[x]]$name[[y]]) || (length(ret[[x]]$name[[y]]) == 1 && ret[[x]]$name[[y]] == 0)) {
-                      return(NULL)
-                    }
-
-                    .Y <- ret[[x]]$func(sce, y)
-                    colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
-                    .Y[, ret[[x]]$name[[y]], drop = FALSE]
-                  }
-                )
+    ret <- sapply(
+      names(ret),
+      function(x) {
+        c(
+          ret[[x]],
+          list(
+            PCs = do.call(
+              cbind,
+              lapply(
+                names(ret[[x]]$name),
+                function(y) {
+                  .Y <- ret[[x]]$func(sce, y)
+                  colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
+                  .d <- min(ncol(.Y), ret[[x]]$name[y])
+                  .Y[, seq_len(.d), drop = FALSE]
+                }
               )
             )
           )
-        },
-        simplify = FALSE
-      ),
-      function(x) is.null(x$PCs)
+        )
+      },
+      simplify = FALSE
     )
-  }
-
-  if (is.null(ret) || length(ret) == 0) {
+  } else {
     ret <- NULL
   }
 
