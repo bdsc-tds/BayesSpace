@@ -117,7 +117,8 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
 #' @importFrom SingleCellExperiment SingleCellExperiment counts
 #' @importFrom S4Vectors metadata metadata<-
 #' @importFrom rhdf5 h5read
-#' @importFrom dplyr %>% group_by mutate select n case_when
+#' @importFrom magrittr %>%
+#' @importFrom dplyr group_by mutate select n case_when
 #' @importFrom tibble column_to_rownames
 #' @rdname readVisium
 read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",

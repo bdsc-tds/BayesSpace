@@ -66,6 +66,57 @@ Mode <- function(x) {
     ux[which.max(tabulate(match(x, ux)))]
 }
 
+#' Add subspot labels and offset row/col locations before making enhanced SCE.
+#'
+#' Subspots are stored as (1.1, 2.1, 3.1, ..., 1.2, 2.2, 3.2, ...)
+#'
+#' @param cdata Table of colData (imagerow and imagecol; from deconv$positions)
+#' @param sce Original sce (to obtain number of spots and original row/col)
+#' @param n_subspots Number of subspots per spot
+#'
+#' @return Data frame with added subspot names, parent spot indices, and offset
+#'   row/column coordinates
+#'
+#' @keywords internal
+#' @importFrom assertthat assert_that
+.prepare_subspot_coldata <- function(
+    positions, sce, subspots
+) {
+  cdata <- as.data.frame(positions)
+  colnames(cdata) <- c("pxl_col_in_fullres", "pxl_row_in_fullres")
+  
+  n_spots <- ncol(sce)
+  n_subspots <- nrow(cdata)
+  assert_that(nrow(cdata) == n_spots * subspots)
+  
+  ## Index of parent spot is (subspot % n_spots)
+  idxs <- seq_len(n_subspots)
+  spot_idxs <- ((idxs - 1) %% n_spots) + 1
+  subspot_idxs <- rep(seq_len(subspots), each = n_spots)
+  cdata$spot.idx <- spot_idxs
+  cdata$subspot.idx <- subspot_idxs
+  
+  ## Barcodes
+  cdata$barcode <- paste(
+    rep(sce$barcode, subspots),
+    subspot_idxs,
+    sep = ":"
+  )
+  rownames(cdata) <- cdata$barcode #paste0("subspot_", spot_idxs, ".", subspot_idxs)
+  
+  ## Compute array_row and array_col
+  offsets <- .make_subspot_offsets(subspots)
+  cdata$spot.row <- rep(sce$array_row, subspots)
+  cdata$spot.col <- rep(sce$array_col, subspots)
+  cdata$array_col <- cdata$spot.col + rep(offsets[, 1], each = n_spots)
+  cdata$array_row <- cdata$spot.row + rep(offsets[, 2], each = n_spots)
+  
+  cols <- c("barcode", "spot.idx", "subspot.idx", "spot.row", "spot.col",
+            "array_row", "array_col",
+            "pxl_row_in_fullres", "pxl_col_in_fullres")
+  cdata[, cols]
+}
+
 #' Prepare cluster/deconvolve inputs from SingleCellExperiment object
 #'
 #' @return List of PCs, names of columns with x/y positions, and inter-spot
@@ -74,40 +125,138 @@ Mode <- function(x) {
 #' @keywords internal
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
-#' @importFrom purrr imap
+#' @importFrom purrr imap compact
+#' @importFrom stats cov
+#' @importFrom magrittr %>%
 .prepare_inputs <- function(
-    sce, use.dimred = "PCA", d = 15,
-    positions = NULL, position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
-    radius = NULL, xdist = NULL, ydist = NULL) {
+    sce, subspots, use.dimred = c(PCA = 15), use.subspot.dimred = NULL,
+    jitter_prior = 0.3, init = NULL,
+    init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
+    position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
+    radius = NULL, xdist = NULL, ydist = NULL, verbose = FALSE
+) {
     inputs <- list()
+    
+    ## PCs on spot-level (to be enhanced)
+    spotPCs <- .check_dimred(sce, use.dimred)[[1]]
+    inputs$d2enhance <- sum(spotPCs$name)
+    
+    ## PCs on subspot-level (fixed)
+    subspotPCs <- .check_dimred(sce, use.subspot.dimred)
+    if (!is.null(subspotPCs)) subspotPCs <- subspotPCs[[1]]
+    
+    n.spotPCs <- nrow(spotPCs$PCs)
+    
+    ## PCs to be enhanced on subspot-level
+    .PCs2enhance <- spotPCs$PCs[rep(seq_len(n.spotPCs), subspots), ]
+    rownames(.PCs2enhance) <- paste(
+      sce$barcode,
+      rep(seq_len(subspots), each = n.spotPCs),
+      sep = ":"
+    )
+    
+    ## PCs to be fixed on subspot-level
+    .PCs2fix <- NULL
+    if (!is.null(subspotPCs)) .PCs2fix <- subspotPCs$PCs
+    
+    ## The amount of jittering (the variance) for the prior distribution
+    inputs$c <- jitter_prior * 1 / (2 * mean(diag(cov(spotPCs$PCs))))
 
-    if (!(use.dimred %in% reducedDimNames(sce))) {
-        stop("reducedDim \"", use.dimred, "\" not found in input SCE.")
-    }
-
-    PCs <- reducedDim(sce, use.dimred)
-    d <- min(d, ncol(PCs))
-    inputs$PCs <- PCs[, seq_len(d)]
-
+    ## pxl coordinates of spots
     if (is.null(positions)) {
         positions <- as.matrix(colData(sce)[position.cols])
     }
-
     colnames(positions) <- c("x", "y")
-    inputs$positions <- positions
+    
+    ## pxl coordinates of subspots
+    .positions <- positions[rep(seq_len(n.spotPCs), subspots), ]
 
     ## Compute inter-spot distances (for neighbor finding)
     ## This should only be necessary for Visium enhancement since switching to
     ## array-coordinate-based neighbor finding
     if (is.null(radius) && is.null(xdist) && is.null(ydist)) {
-        dists <- .compute_interspot_distances(sce)
-        dists <- imap(dists, function(d, n) ifelse(is.null(get(n)), d, get(n)))
-        inputs <- c(inputs, dists)
+      dists <- .compute_interspot_distances(sce)
+      dists <- imap(dists, function(d, n) ifelse(is.null(get(n)), d, get(n)))
     } else {
-        inputs$radius <- radius
-        inputs$xdist <- xdist
-        inputs$ydist <- ydist
+      dists <- list(
+        radius = radius,
+        xdist = xdist,
+        ydist = ydist
+      )
     }
+    
+    ## Compute the pxl coordinates of subspots.
+    shift <- .make_subspot_offsets(subspots)
+    shift <- t(t(shift) * c(dists$xdist, dists$ydist))
+    shift_long <- shift[rep(seq_len(subspots), each = n.spotPCs), ]
+    .positions[, "x"] <- .positions[, "x"] + shift_long[, "Var1"]
+    .positions[, "y"] <- .positions[, "y"] + shift_long[, "Var2"]
+    
+    ## Compute neighbors.
+    dist <- max(rowSums(abs(shift))) * 1.05
+    if (subspots == 9) {
+      dist <- dist / 2
+    }
+    
+    if (verbose) {
+      message("Calculating neighbors...")
+    }
+    inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
+    
+    # Prepare colData for subspots
+    .cdata <- .prepare_subspot_coldata(.positions, sce, subspots)
+    
+    ## Reorder rows of PCs to be fixed on subspot-level
+    if (!is.null(subspotPCs)) .PCs2fix <- .PCs2fix[.cdata$barcode, , drop = FALSE]
+    
+    ## Combine PCs to be enhanced and to be fixed
+    if (is.null(subspotPCs))
+      inputs$PCs <- .PCs2enhance
+    else
+      inputs$PCs <- cbind(.PCs2enhance, .PCs2fix)
+    
+    ## Initialize cluster assignments (use spatialCluster by default)
+    if (is.null(init)) {
+      if (verbose) {
+        message("Initializing clusters...")
+      }
+      
+      init.method <- match.arg(init.method)
+      if (init.method == "spatialCluster") {
+        msg <- paste0(
+          "Must run spatialCluster on sce before enhancement ",
+          "if using spatialCluster to initialize."
+        )
+        assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
+        init <- sce$spatial.cluster
+      } else {
+        init <- .init_cluster(inputs$PCs, q, init, init.method)
+      }
+    }
+    inputs$init <- rep(init, subspots)
+    
+    ## Create an SCE object for subspot
+    colnames(.PCs2enhance) <- vapply(
+      strsplit(colnames(.PCs2enhance), "_"),
+      function(x) x[length(x)],
+      FUN.VALUE = character(1)
+    )
+    if (!is.null(subspotPCs)) 
+      colnames(.PCs2fix) <- vapply(
+        strsplit(colnames(.PCs2fix), "_"),
+        function(x) x[length(x)],
+        FUN.VALUE = character(1)
+      )
+    
+    inputs$sce <- SingleCellExperiment(
+      assays = list(),
+      rowData = rowData(sce),
+      colData = .cdata,
+      reducedDims = compact(list(
+        "PCA" = .PCs2enhance,
+        "image" = .PCs2fix
+      ))
+    )
 
     inputs
 }
@@ -258,6 +407,82 @@ getRDS <- function(dataset, sample, cache = TRUE) {
         }
         default
     }
+}
+
+#' Check for reducedDim features
+#'
+#' @param sce SingleCellExperiment
+#' @param name Names of reduced dimensions
+#'
+#' @return A list of combined reducedDim features
+#'
+#' @keywords internal
+#' @importFrom purrr discard
+.check_dimred <- function(sce, name) {
+  ret <- list()
+  
+  if (is.character(name)) {
+    names(name) <- name
+    name <- sapply(
+      name,
+      function(x) -1,
+      simplify = FALSE
+    )
+  }
+  
+  name <- name[name > 0]
+  
+  reduced_dim <- name[names(name)[names(name) %in% reducedDimNames(sce)]]
+  left_over <- discard(names(name), function(x) x %in% names(reduced_dim))
+  
+  metadata <- name[left_over[left_over %in% names(metadata(sce)[["BayesSpace.data"]])]]
+  left_over <- discard(left_over, function(x) x %in% names(metadata))
+  
+  if (!is.null(reduced_dim) && length(reduced_dim) > 0)
+    ret$reduced_dim <- list(
+      name = reduced_dim,
+      func = reducedDim
+    )
+  
+  if (!is.null(metadata) && length(metadata) > 0)
+    ret$metadata <- list(
+      name = metadata,
+      func = .bsData
+    )
+  
+  if (!is.null(left_over) && length(left_over) > 0)
+    warning(paste0(
+      "Cannot find the following reduced dimensions: ",
+      paste0(left_over, collapse = ", ")
+    ))
+  
+  if (length(ret) > 0)
+    ret <- sapply(
+      names(ret),
+      function(x) {
+        c(
+          ret[[x]],
+          list(
+            PCs = do.call(
+              cbind,
+              lapply(
+                names(ret[[x]]$name),
+                function(y) {
+                  .Y <- ret[[x]]$func(sce, y)
+                  colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
+                  .d <- min(ncol(.Y), ret[[x]]$name[y])
+                  .Y[, seq_len(.d), drop = FALSE]
+                }
+              )
+            )
+          )
+        )
+      },
+      simplify = FALSE
+    )
+  else ret <- NULL
+  
+  ret
 }
 
 #' Convert a list into vectors for easier output.
