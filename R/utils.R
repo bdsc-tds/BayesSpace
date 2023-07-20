@@ -177,10 +177,87 @@ Mode <- function(x) {
     dists <- .compute_interspot_distances(sce)
     dists <- imap(dists, function(d, n) ifelse(is.null(get(n)), d, get(n)))
   } else {
-    inputs$radius <- radius
-    inputs$xdist <- xdist
-    inputs$ydist <- ydist
+    dists <- list(
+      radius = radius,
+      xdist = xdist,
+      ydist = ydist
+    )
   }
+
+  ## Compute the pxl coordinates of subspots.
+  shift <- .make_subspot_offsets(subspots)
+  shift <- t(t(shift) * c(dists$xdist, dists$ydist))
+  shift_long <- shift[rep(seq_len(subspots), each = n.spotPCs), ]
+  .positions[, "x"] <- .positions[, "x"] + shift_long[, "Var1"]
+  .positions[, "y"] <- .positions[, "y"] + shift_long[, "Var2"]
+
+  ## Compute neighbors.
+  dist <- max(rowSums(abs(shift))) * 1.05
+  if (subspots == 9) {
+    dist <- dist / 2
+  }
+
+  if (verbose) {
+    message("Calculating neighbors...")
+  }
+  inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
+
+  # Prepare colData for subspots
+  .cdata <- .prepare_subspot_coldata(.positions, sce, subspots)
+
+  ## Reorder rows of PCs to be fixed on subspot-level
+  if (!is.null(subspotPCs)) .PCs2fix <- .PCs2fix[.cdata$barcode, , drop = FALSE]
+
+  ## Combine PCs to be enhanced and to be fixed
+  if (is.null(subspotPCs)) {
+    inputs$PCs <- .PCs2enhance
+  } else {
+    inputs$PCs <- cbind(.PCs2enhance, .PCs2fix)
+  }
+
+  ## Initialize cluster assignments (use spatialCluster by default)
+  if (is.null(init)) {
+    if (verbose) {
+      message("Initializing clusters...")
+    }
+
+    init.method <- match.arg(init.method)
+    if (init.method == "spatialCluster") {
+      msg <- paste0(
+        "Must run spatialCluster on sce before enhancement ",
+        "if using spatialCluster to initialize."
+      )
+      assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
+      init <- sce$spatial.cluster
+    } else {
+      init <- .init_cluster(inputs$PCs, q, init, init.method)
+    }
+  }
+  inputs$init <- rep(init, subspots)
+
+  ## Create an SCE object for subspot
+  colnames(.PCs2enhance) <- vapply(
+    strsplit(colnames(.PCs2enhance), "_"),
+    function(x) x[length(x)],
+    FUN.VALUE = character(1)
+  )
+  if (!is.null(subspotPCs)) {
+    colnames(.PCs2fix) <- vapply(
+      strsplit(colnames(.PCs2fix), "_"),
+      function(x) x[length(x)],
+      FUN.VALUE = character(1)
+    )
+  }
+
+  inputs$sce <- SingleCellExperiment(
+    assays = list(),
+    rowData = rowData(sce),
+    colData = .cdata,
+    reducedDims = compact(list(
+      "PCA" = .PCs2enhance,
+      "image" = .PCs2fix
+    ))
+  )
 
   inputs
 }
