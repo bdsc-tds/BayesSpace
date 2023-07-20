@@ -177,7 +177,7 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     jitter_prior = jitter_prior,
     init = init, init.method = init.method,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist, verbose = verbose
+    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
   )
 
   ## Set model parameters
