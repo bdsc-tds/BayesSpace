@@ -179,7 +179,7 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     jitter_prior = jitter_prior,
     init = init, init.method = init.method,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist, verbose = verbose
+    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
   )
 
   ## Set model parameters
@@ -240,11 +240,6 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
     params <- c("z", "mu", "lambda", "weights", "Y", "Ychange", "plogLik")
     metadata(inputs$sce)$chain.h5 <- .write_chain(deconv, chain.fname, params)
   }
-
-  ## Add metadata to new SingleCellExperiment object
-  metadata(inputs$sce)$BayesSpace.data <- list()
-  metadata(inputs$sce)$BayesSpace.data$platform <- platform
-  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
 
   inputs$sce
 }
