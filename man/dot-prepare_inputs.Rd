@@ -10,6 +10,8 @@
   use.dimred = c(PCA = 15),
   use.subspot.dimred = NULL,
   jitter_prior = 0.3,
+  calc.neighbors = TRUE,
+  calc.init = TRUE,
   init = NULL,
   init.method = c("spatialCluster", "mclust", "kmeans"),
   positions = NULL,
@@ -17,6 +19,7 @@
   radius = NULL,
   xdist = NULL,
   ydist = NULL,
+  platform = c("Visium", "ST"),
   verbose = FALSE
 )
 }
