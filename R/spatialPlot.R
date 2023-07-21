@@ -508,6 +508,108 @@ imageFeaturePlot <- function(
   )
 }
 
+#' Plot features extracted from images.
+#' 
+#' @param sce SingleCellExperiment as the output of \code{spatialPreprocess}.
+#' @param res Features from which resolution to plot.
+#' @param d Number of features to plot.
+#' @param display An optional vector of two specifying the number of rows and
+#'   columns the feature plots to be organized.
+#' @param platform Spatial sequencing platform. Used to determine spot layout
+#'   and neighborhood structure (Visium = hex, ST = square).
+#' @inheritParams featurePlot
+#' 
+#' @return Returns a list of ggplot objects, named either \code{spot},
+#'   \code{subspot}, or both.
+#' 
+#' @family spatial plotting functions
+#'
+#' @importFrom assertthat assert_that
+#' @importFrom SingleCellExperiment reducedDimNames SingleCellExperiment
+#' @importFrom SummarizedExperiment rownames
+#' @importFrom S4Vectors metadata metadata<-
+#' @importFrom patchwork wrap_plots
+#' @export
+imageFeaturePlot <- function(
+    sce, res = c("spot", "subspot", "both"),
+    d = 5, display = NULL, platform = c("Visium", "ST"),
+    diverging = FALSE, low = NULL, high = NULL, mid = NULL, color = NULL, ...
+) {
+  if (is.null(display)) {
+    .nrow <- NULL
+    .ncol <- NULL
+  } else {
+    assert_that(is.numeric(display) && length(display) == 2)
+    assert_that(d <= prod(display))
+    .nrow <- display[1]
+    .ncol <- display[2]
+  }
+  
+  res <- match.arg(res)
+  
+  plot.sce <- list()
+  
+  if (res %in% c("spot", "both")) {
+    assert_that("image" %in% reducedDimNames(sce))
+    
+    plot.sce$spot <- SingleCellExperiment(
+      assays = list(
+        counts = t(reducedDim(sce, "image"))
+      ),
+      rowData = colnames(reducedDim(sce, "image")),
+      colData = colData(sce)
+    )
+    metadata(plot.sce$spot) <- metadata(sce)
+  }
+  
+  if (res %in% c("subspot", "both")) {
+    assert_that("subspot_image_feats_pcs" %in% names(metadata(sce)$BayesSpace.data))
+    
+    platform <- match.arg(platform)
+    if (platform == "Visium")
+      position.cols <- c("pxl_col_in_fullres", "pxl_row_in_fullres")
+    else if (platform == "ST")
+      position.cols <- c("array_col", "array_row")
+    subspots = ifelse(platform == "Visium", 6, 9)
+    
+    sce_subspot <- .prepare_inputs(
+      sce, subspots = subspots,
+      use.subspot.dimred = c(subspot_image_feats_pcs = d),
+      calc.neighbors = FALSE, calc.init = FALSE,
+      positions = NULL, position.cols = position.cols,
+      platform = platform
+    )$sce
+    
+    plot.sce$subspot <- SingleCellExperiment(
+      assays = list(
+        counts = t(reducedDim(sce_subspot, "image"))
+      ),
+      rowData = colnames(reducedDim(sce_subspot, "image")),
+      colData = colData(sce_subspot)
+    )
+    metadata(plot.sce$subspot) <- metadata(sce_subspot)
+  }
+  
+  sapply(
+    plot.sce,
+    function(x) {
+      wrap_plots(
+        lapply(
+          rownames(x)[seq_len(d)],
+          function(y) featurePlot(
+            x, y, assay.type = "counts",
+            diverging = diverging, low = low, high = high, mid = mid,
+            color = color, ...
+          )
+        ),
+        nrow = .nrow,
+        ncol = .ncol
+      )
+    },
+    simplify = FALSE
+  )
+}
+
 
 
 #' Make vertices outlining spots/subspots for geom_polygon()

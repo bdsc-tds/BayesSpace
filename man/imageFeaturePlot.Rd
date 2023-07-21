@@ -6,10 +6,9 @@
 \usage{
 imageFeaturePlot(
   sce,
-  datatype = c("pca", "vae", "both"),
   res = c("spot", "subspot", "both"),
-  d = c(pca = 5, vae = 64),
-  display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
+  d = 5,
+  display = NULL,
   platform = c("Visium", "ST"),
   diverging = FALSE,
   low = NULL,
@@ -22,16 +21,12 @@ imageFeaturePlot(
 \arguments{
 \item{sce}{SingleCellExperiment as the output of \code{spatialPreprocess}.}
 
-\item{datatype}{Type of data to plot, either features extracted from VAE,
-the PCA features extracted from the results of VAE, or both.}
-
 \item{res}{Features from which resolution to plot.}
 
-\item{d}{A named vector for the numbers of features to plot.}
+\item{d}{Number of features to plot.}
 
-\item{display}{An optional list of vectors, each vector have two numbers
-specifying the number of rows and columns the feature plots to be
-organized.}
+\item{display}{An optional vector of two specifying the number of rows and
+columns the feature plots to be organized.}
 
 \item{platform}{Spatial sequencing platform. Used to determine spot layout
 and neighborhood structure (Visium = hex, ST = square).}
