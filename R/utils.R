@@ -124,7 +124,8 @@ Mode <- function(x) {
 #'
 #' @keywords internal
 #'
-#' @importFrom SingleCellExperiment reducedDimNames metadata
+#' @importFrom SingleCellExperiment reducedDimNames
+#' @importFrom S4Vectors metadata metadata<-
 #' @importFrom purrr imap compact
 #' @importFrom stats cov
 #' @importFrom magrittr %>%

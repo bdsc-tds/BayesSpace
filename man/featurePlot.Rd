@@ -65,6 +65,7 @@ featurePlot(sce, "gene_2")
 }
 \seealso{
 Other spatial plotting functions: 
-\code{\link{clusterPlot}()}
+\code{\link{clusterPlot}()},
+\code{\link{imageFeaturePlot}()}
 }
 \concept{spatial plotting functions}
