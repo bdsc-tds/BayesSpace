@@ -81,7 +81,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       
       ## Get PCs from VAE features.
       reducedDim(sce, "image") <- scater::calculatePCA(
-        metadata(sce)$BayesSpace.data$spot_image_feats,
+        t(metadata(sce)$BayesSpace.data$spot_image_feats),
         ncomponents = n.PCs.image,
         ntop = dim(metadata(sce)$BayesSpace.data$spot_image_feats)[1],
         BSPARAM = BSPARAM
@@ -104,7 +104,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       
       ## Get PCs from VAE features.
       metadata(sce)$BayesSpace.data$subspot_image_feats_pcs <- scater::calculatePCA(
-        metadata(sce)$BayesSpace.data$subspot_image_feats,
+        t(metadata(sce)$BayesSpace.data$subspot_image_feats),
         ncomponents = n.PCs.image,
         ntop = dim(metadata(sce)$BayesSpace.data$subspot_image_feats)[1],
         BSPARAM = BSPARAM
@@ -130,11 +130,11 @@ extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
                                 autoencoder = T,
                                 hidden = h2o.hidden.layer.size,
                                 activation = 'Tanh')
-  img.feats <- t(as.matrix(h2o.deepfeatures(vae.model, features, layer = 1)))
+  img.feats <- as.matrix(h2o.deepfeatures(vae.model, features, layer = 1))
   
   if (shutdown)
     h2o.shutdown(prompt = FALSE)
   
-  colnames(img.feats) <- colnames(images)
+  rownames(img.feats) <- colnames(images)
   img.feats
 }
