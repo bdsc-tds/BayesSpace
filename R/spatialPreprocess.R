@@ -17,6 +17,9 @@
 #'   Leave as "logcounts" unless you explicitly pre-computed a different
 #'   normalization and added it to \code{sce} under another assay. Note that we
 #'   do not recommend running BayesSpace on PCs computed from raw counts.
+#' @param h2o.reproducible Whether to generate reproducible results from h2o.
+#'   Default to \code{FALSE} for better performance.
+#' @param h2o.seed Only valid when \code{h2o.reproducible} is \code{TRUE}.
 #' @param h2o.max.mem The maximum amount of memory that h2o uses.
 #' @param n.PCs.image The number of PCs to be extracted from the image (if 
 #'   available).
@@ -41,6 +44,7 @@
 spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
                               n.PCs=15, n.HVGs=2000, skip.PCA=FALSE,
                               log.normalize=TRUE, assay.type="logcounts",
+                              h2o.reproducible=FALSE, h2o.seed=-1,
                               h2o.max.mem="5g", h2o.hidden.layer.size=64,
                               n.PCs.image=5, BSPARAM=ExactParam(), ...) {
     ## Set BayesSpace metadata
@@ -75,9 +79,10 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$spot_image,
-        TRUE, FALSE,
-        h2o.max.mem,
-        h2o.hidden.layer.size,
+        init = TRUE, shutdown = FALSE,
+        reproducible = h2o.reproducible, seed = h2o.seed,
+        h2o.max.mem = h2o.max.mem,
+        h2o.hidden.layer.size = h2o.hidden.layer.size,
         ...
       )
       
@@ -98,9 +103,10 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
       ## Get features extracted by VAE.
       metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
         metadata(sce)$BayesSpace.data$subspot_image,
-        FALSE, TRUE,
-        h2o.max.mem,
-        h2o.hidden.layer.size,
+        init = FALSE, shutdown = TRUE,
+        reproducible = h2o.reproducible, seed = h2o.seed,
+        h2o.max.mem = h2o.max.mem,
+        h2o.hidden.layer.size = h2o.hidden.layer.size,
         ...
       )
       
@@ -121,6 +127,7 @@ spatialPreprocess <- function(sce, platform=c("Visium", "ST"),
 
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
 extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
+                                 reproducible = FALSE, seed = -1,
                                  h2o.max.mem = "5g", h2o.hidden.layer.size = 64,
                                  ...) {
   if (init)
@@ -130,11 +137,15 @@ extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
     )
   
   features <- as.h2o(t(images))
-  vae.model <- h2o.deeplearning(x = seq_along(features),
-                                training_frame = features,
-                                autoencoder = T,
-                                hidden = h2o.hidden.layer.size,
-                                activation = 'Tanh')
+  vae.model <- h2o.deeplearning(
+    x = seq_along(features),
+    reproducible = reproducible,
+    seed = seed,
+    training_frame = features,
+    autoencoder = T,
+    hidden = h2o.hidden.layer.size,
+    activation = 'Tanh'
+  )
   img.feats <- as.matrix(h2o.deepfeatures(vae.model, features, layer = 1))
   
   if (shutdown)
