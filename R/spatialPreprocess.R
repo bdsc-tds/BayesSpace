@@ -77,9 +77,10 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
     ## Get features extracted by VAE.
     metadata(sce)$BayesSpace.data$spot_image_feats <- extractImageFeatures(
       metadata(sce)$BayesSpace.data$spot_image,
-      h2o.hidden.layer.size,
-      TRUE, FALSE,
-      h2o.max.mem,
+      init = TRUE, shutdown = FALSE,
+      reproducible = h2o.reproducible, seed = h2o.seed,
+      h2o.max.mem = h2o.max.mem,
+      h2o.hidden.layer.size = h2o.hidden.layer.size,
       ...
     )
 
@@ -100,9 +101,10 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
     ## Get features extracted by VAE.
     metadata(sce)$BayesSpace.data$subspot_image_feats <- extractImageFeatures(
       metadata(sce)$BayesSpace.data$subspot_image,
-      FALSE, TRUE,
-      h2o.max.mem,
-      h2o.hidden.layer.size,
+      init = FALSE, shutdown = TRUE,
+      reproducible = h2o.reproducible, seed = h2o.seed,
+      h2o.max.mem = h2o.max.mem,
+      h2o.hidden.layer.size = h2o.hidden.layer.size,
       ...
     )
 
@@ -110,7 +112,7 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
     metadata(sce)$BayesSpace.data$subspot_image <- NULL
 
     ## Get PCs from VAE features.
-    reducedDim(sce, "image") <- scater::calculatePCA(
+    metadata(sce)$BayesSpace.data$subspot_image_feats_pcs <- scater::calculatePCA(
       t(metadata(sce)$BayesSpace.data$subspot_image_feats),
       ncomponents = n.PCs.image,
       ntop = dim(metadata(sce)$BayesSpace.data$subspot_image_feats)[1],
@@ -123,6 +125,7 @@ spatialPreprocess <- function(sce, platform = c("Visium", "ST"),
 
 #' @importFrom h2o h2o.init as.h2o h2o.deeplearning h2o.deepfeatures h2o.shutdown
 extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
+                                 reproducible = FALSE, seed = -1,
                                  h2o.max.mem = "5g", h2o.hidden.layer.size = 64,
                                  ...) {
   if (init) {
@@ -135,10 +138,12 @@ extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
   features <- as.h2o(t(images))
   vae.model <- h2o.deeplearning(
     x = seq_along(features),
+    reproducible = reproducible,
+    seed = seed,
     training_frame = features,
     autoencoder = T,
     hidden = h2o.hidden.layer.size,
-    activation = "Tanh"
+    activation = 'Tanh'
   )
   img.feats <- as.matrix(h2o.deepfeatures(vae.model, features, layer = 1))
 
