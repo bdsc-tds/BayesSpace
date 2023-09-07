@@ -783,6 +783,7 @@ iterate_deconv(
 
         const mat Y_j_prev = Y.rows(j0_vector * n0 + j0);
         mat Y_j_new(subspots, d_total);
+
         mat error_j = error.rows(j0_vector * n0 + j0);
 
         // Make sure that the sum of the error terms is zero.
