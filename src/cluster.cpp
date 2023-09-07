@@ -826,126 +826,131 @@ iterate_deconv(
         }
       }
 
-      // Accept or reject proposals of Y; update w; propose new values for z.
-      for (int j0 = 0; j0 < n0; j0++) {
-        const IntegerVector Ysample = {0, 1};
-        const NumericVector probsY  = {
-            1 - acceptance_prob(j0), acceptance_prob(j0)
-        };
-        const int yesUpdate = sample(Ysample, 1, true, probsY)[0];
-        if (yesUpdate == 1) {
-          Y(j0_vector * n0 + j0, d_vector) = Y_new.rows(j0_vector * n0 + j0);
-          updateCounter++;
-        }
+#pragma omp single
+      {
+        int updateCounter = 0;
 
-        for (int r = 0; r < subspots; r++) {
-          // Update w.
-          if (tdist) {
-            const double w_beta = as_scalar(
-                2 /
-                ((Y.row(r * n0 + j0) - mu_i_long.row(r * n0 + j0)) * lambda_i *
-                     (Y.row(r * n0 + j0) - mu_i_long.row(r * n0 + j0)).t() +
-                 4)
-            );   // scale parameter
-            w(r * n0 + j0) =
-                R::rgamma(w_alpha, w_beta);   // sample from posterior for w
+        // Accept or reject proposals of Y; update w; propose new values for z.
+        for (int j0 = 0; j0 < n0; j0++) {
+          const IntegerVector Ysample = {0, 1};
+          const NumericVector probsY  = {
+              1 - acceptance_prob(j0), acceptance_prob(j0)
+          };
+          const int yesUpdate = sample(Ysample, 1, true, probsY)[0];
+          if (yesUpdate == 1) {
+            Y(j0_vector * n0 + j0, d_vector) = Y_new.rows(j0_vector * n0 + j0);
+            updateCounter++;
           }
 
-          // Propose new values for z.
-          const IntegerVector qlessk = qvec[qvec != z(r * n0 + j0)];
-          z_new(r * n0 + j0)         = sample(qlessk, 1)[0];
-        }
-      }
-      Ychange[i] = updateCounter * 1.0 / n0;
-    }
+          for (int r = 0; r < subspots; r++) {
+            // Update w.
+            if (tdist) {
+              const double w_beta = as_scalar(
+                  2 /
+                  ((Y.row(r * n0 + j0) - mu_i_long.row(r * n0 + j0)) *
+                       lambda_i *
+                       (Y.row(r * n0 + j0) - mu_i_long.row(r * n0 + j0)).t() +
+                   4)
+              );   // scale parameter
+              w(r * n0 + j0) =
+                  R::rgamma(w_alpha, w_beta);   // sample from posterior for w
+            }
 
-    // Update z
+            // Propose new values for z.
+            const IntegerVector qlessk = qvec[qvec != z(r * n0 + j0)];
+            z_new(r * n0 + j0)         = sample(qlessk, 1)[0];
+          }
+        }
+        Ychange[i] = updateCounter * 1.0 / n0;
+      }
+
+      // Update z
 #pragma omp for
-    for (int j = 0; j < n; j++) {
+      for (int j = 0; j < n; j++) {
 #ifdef _OPENMP
 #pragma omp atomic update
-      thread_hits[omp_get_thread_num()]++;
+        thread_hits[omp_get_thread_num()]++;
 #endif
 
-      // Adaptive MCMC.
-      if (jitter_scale == 0.0 && i > 10) {
-        adaptive_mtx[j] = adaptive_mcmc(
-            static_cast<double>(num_accepts[j % n0]) /
-                (num_accepts[j % n0] + num_rejects[j % n0]),
-            0.234, i, error_var, adaptive_mtx[j], error.row(j)
-        );
-      }
+        // Adaptive MCMC.
+        if (jitter_scale == 0.0 && i > 10) {
+          adaptive_mtx[j] = adaptive_mcmc(
+              static_cast<double>(num_accepts[j % n0]) /
+                  (num_accepts[j % n0] + num_rejects[j % n0]),
+              0.234, i, error_var, adaptive_mtx[j], error.row(j)
+          );
+        }
 
-      const int z_j_prev      = z(j);
-      const int z_j_new       = z_new(j);
-      const Neighbor j_vector = neighbors[j];
+        const int z_j_prev      = z(j);
+        const int z_j_new       = z_new(j);
+        const Neighbor j_vector = neighbors[j];
 
-      // log likelihood; prior
-      vec h_z_prev(2, arma::fill::zeros), h_z_new(2, arma::fill::zeros);
+        // log likelihood; prior
+        vec h_z_prev(2, arma::fill::zeros), h_z_new(2, arma::fill::zeros);
 
-      h_z_prev(0) = dmvnrm_prec_arma_fast(
-          Y.row(j), mu_i.row(z_j_prev - 1), lambda_i * w(j), true
-      )[0];
-      h_z_new(0) = dmvnrm_prec_arma_fast(
-          Y.row(j), mu_i.row(z_j_new - 1), lambda_i * w(j), true
-      )[0];
+        h_z_prev(0) = dmvnrm_prec_arma_fast(
+            Y.row(j), mu_i.row(z_j_prev - 1), lambda_i * w(j), true
+        )[0];
+        h_z_new(0) = dmvnrm_prec_arma_fast(
+            Y.row(j), mu_i.row(z_j_new - 1), lambda_i * w(j), true
+        )[0];
 
-      if (j_vector.get_size() != 0) {
-        h_z_prev(1) = gamma / j_vector.get_size() * 2 *
-                      accu((z(j_vector.get_neighbors()) == z_j_prev));
-        h_z_new(1) = gamma / j_vector.get_size() * 2 *
-                     accu((z(j_vector.get_neighbors()) == z_j_new));
-      }
-      double prob_j = exp(accu(h_z_new) - accu(h_z_prev));
-      if (prob_j > 1) {
-        prob_j = 1;
-      }
+        if (j_vector.get_size() != 0) {
+          h_z_prev(1) = gamma / j_vector.get_size() * 2 *
+                        accu((z(j_vector.get_neighbors()) == z_j_prev));
+          h_z_new(1) = gamma / j_vector.get_size() * 2 *
+                       accu((z(j_vector.get_neighbors()) == z_j_new));
+        }
+        double prob_j = exp(accu(h_z_new) - accu(h_z_prev));
+        if (prob_j > 1) {
+          prob_j = 1;
+        }
 
 #pragma omp critical(iter_z)
-      {
-        acceptance_prob(j)     = prob_j;
-        log_likelihoods.row(j) = {h_z_prev(0), h_z_new(0)};
-      }
-    }
-
-#pragma omp single
-    {
-      // Accept or reject proposals of z.
-      for (int j = 0; j < n; j++) {
-        const IntegerVector zsample = {0, 1};
-        const NumericVector probs   = {
-            1 - acceptance_prob(j), acceptance_prob(j)
-        };
-        const uword yesUpdate = sample(zsample, 1, true, probs)[0];
-        log_likelihoods.set_col_idx(j, yesUpdate);
-        if (yesUpdate == 1) {
-          z(j) = z_new(j);
+        {
+          acceptance_prob(j)     = prob_j;
+          log_likelihoods.row(j) = {h_z_prev(0), h_z_new(0)};
         }
       }
-      plogLik[i] = accu(log_likelihoods.get_current_values());
 
-      // Save samples for every 100 iterations.
-      if ((i + 1) % 100 == 0) {
-        df_sim_lambda[(i + 1) / 100] = lambda_i;
-        df_sim_Y[(i + 1) / 100]      = Y.cols(0, d - 1);
-        df_sim_w.row((i + 1) / 100)  = w.t();
-        df_sim_z.row((i + 1) / 100)  = z.t();
+#pragma omp single
+      {
+        // Accept or reject proposals of z.
+        for (int j = 0; j < n; j++) {
+          const IntegerVector zsample = {0, 1};
+          const NumericVector probs   = {
+              1 - acceptance_prob(j), acceptance_prob(j)
+          };
+          const uword yesUpdate = sample(zsample, 1, true, probs)[0];
+          log_likelihoods.set_col_idx(j, yesUpdate);
+          if (yesUpdate == 1) {
+            z(j) = z_new(j);
+          }
+        }
+        plogLik[i] = accu(log_likelihoods.get_current_values());
+
+        // Save samples for every 100 iterations.
+        if ((i + 1) % 100 == 0) {
+          df_sim_lambda[(i + 1) / 100] = lambda_i;
+          df_sim_Y[(i + 1) / 100]      = Y.cols(0, d - 1);
+          df_sim_w.row((i + 1) / 100)  = w.t();
+          df_sim_z.row((i + 1) / 100)  = z.t();
+        }
       }
-    }
 
-    List out = List::create(
-        _["z"] = df_sim_z, _["mu"] = df_sim_mu, _["lambda"] = df_sim_lambda,
-        _["weights"] = df_sim_w, _["Y"] = df_sim_Y, _["Ychange"] = Ychange,
-        _["plogLik"] = plogLik
-    );
+      List out = List::create(
+          _["z"] = df_sim_z, _["mu"] = df_sim_mu, _["lambda"] = df_sim_lambda,
+          _["weights"] = df_sim_w, _["Y"] = df_sim_Y, _["Ychange"] = Ychange,
+          _["plogLik"] = plogLik
+      );
 
-    indicators::show_console_cursor(true);
+      indicators::show_console_cursor(true);
 
 #ifdef _OPENMP
-    if (verbose) {
-      print_thread_hits(thread_hits);
-    }
+      if (verbose) {
+        print_thread_hits(thread_hits);
+      }
 #endif
 
-    return (out);
-  }
+      return (out);
+    }
