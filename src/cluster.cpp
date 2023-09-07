@@ -835,8 +835,7 @@ iterate_deconv(
           };
           const int yesUpdate = sample(Ysample, 1, true, probsY)[0];
           if (yesUpdate == 1) {
-            Y.rows(j0_vector * n0 + j0, d_vector) =
-                Y_new.rows(j0_vector * n0 + j0);
+            Y(j0_vector * n0 + j0, d_vector) = Y_new.rows(j0_vector * n0 + j0);
             updateCounter++;
           }
 
