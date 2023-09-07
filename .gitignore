@@ -62,6 +62,7 @@ docs/
 *.nb.html
 *.rds
 
+__tools/
 src/indicators
 **/data*/
 **/results*/
