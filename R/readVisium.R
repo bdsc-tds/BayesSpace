@@ -49,7 +49,7 @@ NULL
 #' @rdname readVisium
 readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
                        init.backend = TRUE, shutdown.backend = TRUE,
-                       cores = 1, num.spots = -1) {
+                       cores = 1, num.spots = -1, verbose = FALSE) {
     spatial_dir <- file.path(dirname, "spatial")
     matrix_dir <- file.path(dirname, "filtered_feature_bc_matrix")
 
@@ -103,7 +103,7 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
       
       flattened_tiles <- create_tiles(sce, fullres.image, scale_factor_fname,
                                       tile.image.dir, num.spots, init.backend,
-                                      shutdown.backend, cores)
+                                      shutdown.backend, cores, verbose)
       
       metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
       metadata(sce)$BayesSpace.data$subspot_image <- flattened_tiles$subspot
@@ -124,7 +124,7 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
 read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
                       fullres.image = NULL, tile.image.dir = NULL,
                       init.backend = TRUE, shutdown.backend = TRUE,
-                      cores = 1, num.spots = -1) {
+                      cores = 1, num.spots = -1, verbose = FALSE) {
     spatial_dir <- file.path(dirname, "spatial")
     h5_file <- file.path(dirname, fname)
 
@@ -208,7 +208,7 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
       
       flattened_tiles <- create_tiles(sce, fullres.image, scale_factor_fname,
                                       tile.image.dir, num.spots, init.backend,
-                                      shutdown.backend, cores)
+                                      shutdown.backend, cores, verbose)
       
       metadata(sce)$BayesSpace.data$spot_image <- flattened_tiles$spot
       metadata(sce)$BayesSpace.data$subspot_image <- flattened_tiles$subspot
@@ -223,7 +223,7 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
 create_tiles <- function(sce, fullres.image, scale.factor.fname,
                          tile.image.dir = NULL, num.spots = dim(sce)[2],
                          init.backend = TRUE, shutdown.backend = TRUE,
-                         cores = 1) {
+                         cores = 1, verbose = FALSE) {
   if (!file.exists(fullres.image)) stop("Full resolution image does not exist:\n", fullres.image)
   if (!file.exists(scale.factor.fname)) stop("Scale factor file does not exist:\n", scale.factor.fname)
   
@@ -235,7 +235,8 @@ create_tiles <- function(sce, fullres.image, scale.factor.fname,
     .barcodes,
     as.matrix(colData(sce)[seq_len(num.spots), c("pxl_col_in_fullres", "pxl_row_in_fullres")]),
     fromJSON(file = scale.factor.fname)$spot_diameter_fullres / 2,
-    fullres.image, tile.image.dir, init.backend, shutdown.backend, cores
+    fullres.image, tile.image.dir, init.backend, shutdown.backend, cores,
+    verbose
   )
   
   colnames(flattened_tiles$spot) <- .barcodes
