@@ -9,11 +9,11 @@
 #'   parameter is optional when analyzing SingleCellExperiments processed using
 #'   \code{\link{readVisium}} or \code{\link{spatialPreprocess}}, as this
 #'   information is included in their metadata.
-#' @param use.dimred A named vector with values being numbers of top principal
+#' @param use.dimred A named list with vectors of numbers of top principal
 #'   components to use from spot-level data when clustering, named after the
-#'   names of several reduced dimensionality results in \code{reducedDims(sce)}.
-#'   They must share the same number of rows and row names. If provided, cluster
-#'   on these features directly.
+#'   names of several reduced dimensionality results in \code{reducedDims(sce)}
+#'   or \code{metadata(sce)$BayesSpace.data}. They must share the same number
+#'   of rows and row names. If provided, cluster on these features directly.
 #' @param init Initial cluster assignments for spots.
 #' @param init.method If \code{init} is not provided, cluster the top \code{d}
 #'   PCs with this method to obtain initial cluster assignments.
@@ -118,7 +118,7 @@ cluster <- function(
 #' @export
 #' @rdname spatialCluster
 spatialCluster <- function(
-    sce, q, use.dimred = c(PCA = 15),
+    sce, q, use.dimred = list(PCA = seq_len(15)),
     platform = c("Visium", "ST"),
     init = NULL, init.method = c("mclust", "kmeans"),
     model = c("t", "normal"), precision = c("equal", "variable"),
