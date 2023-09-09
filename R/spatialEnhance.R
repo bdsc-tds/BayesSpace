@@ -10,15 +10,14 @@
 #'   \code{\link{readVisium}}, \code{\link{spatialPreprocess}}, or
 #'   \code{\link{spatialCluster}}, as this information is included in their
 #'   metadata.
-#' @param use.dimred A named vector with values being numbers of top principal
-#'   components to use from spot-level data when enhancing, named after the
-#'   names of several reduced dimensionality results in \code{reducedDims(sce)}.
-#'   They must share the same number of rows and row names.
-#' @param subspot.d The number of top principal components from the
-#'   corresponding H&E image to use during the clustering on the subspot-level,
-#'   if such data is available (by default 5; ignored if no such data).
-#' @param d A vector of numbers of top principal components to use when
-#'   clustering. The length of \code{d} must match that of \code{use.dimred}.
+#' @param use.dimred A named list with vectors of numbers of top principal
+#'   components to use from spot-level data when clustering, named after the
+#'   names of several reduced dimensionality results in \code{reducedDims(sce)}
+#'   or \code{metadata(sce)$BayesSpace.data}. They must share the same number
+#'   of rows and row names. If provided, cluster on these features directly.
+#' @param subspot.d A vector of principal components from the corresponding H&E
+#'   image to use during the clustering on the subspot-level, if such data is
+#'   available (by default \code{seq_len(5)}; ignored if no such data).
 #' @param init Initial cluster assignments for spots.
 #' @param init.method If \code{init} is not provided, cluster the top \code{d}
 #'   PCs with this method to obtain initial cluster assignments.
@@ -129,7 +128,7 @@ NULL
 #' @importFrom SummarizedExperiment rowData
 #' @importFrom assertthat assert_that
 spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
-                           use.dimred = c(PCA = 15), subspot.d = 5,
+                           use.dimred = list(PCA = seq_len(15)), subspot.d = seq_len(5),
                            init = NULL, init.method = c("spatialCluster", "mclust", "kmeans"),
                            model = c("t", "normal"), nrep = 200000, gamma = NULL,
                            mu0 = NULL, lambda0 = NULL, alpha = 1, beta = 0.01,
@@ -167,7 +166,7 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
   inputs <- .prepare_inputs(
     sce, subspots = subspots,
     use.dimred = use.dimred,
-    use.subspot.dimred = c(subspot_image_feats_pcs = subspot.d),
+    use.subspot.dimred = list(subspot_image_feats_pcs = subspot.d),
     jitter_prior = jitter_prior,
     init = init, init.method = init.method,
     positions = NULL, position.cols = position.cols,

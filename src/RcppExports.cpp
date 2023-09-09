@@ -130,8 +130,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // get_spot_subspot_tiles_from_image
-Rcpp::List get_spot_subspot_tiles_from_image(const Rcpp::CharacterVector& barcodes, const arma::mat& spot_center_coordinates, const double spot_radius_pxl, const std::string& fullres_image_file, const std::string& tile_image_dir, const bool init_vips, const bool shutdown_vips, const int thread_num);
-RcppExport SEXP _BayesSpace_get_spot_subspot_tiles_from_image(SEXP barcodesSEXP, SEXP spot_center_coordinatesSEXP, SEXP spot_radius_pxlSEXP, SEXP fullres_image_fileSEXP, SEXP tile_image_dirSEXP, SEXP init_vipsSEXP, SEXP shutdown_vipsSEXP, SEXP thread_numSEXP) {
+Rcpp::List get_spot_subspot_tiles_from_image(const Rcpp::CharacterVector& barcodes, const arma::mat& spot_center_coordinates, const double spot_radius_pxl, const std::string& fullres_image_file, const std::string& tile_image_dir, const bool init_vips, const bool shutdown_vips, const int thread_num, const bool verbose);
+RcppExport SEXP _BayesSpace_get_spot_subspot_tiles_from_image(SEXP barcodesSEXP, SEXP spot_center_coordinatesSEXP, SEXP spot_radius_pxlSEXP, SEXP fullres_image_fileSEXP, SEXP tile_image_dirSEXP, SEXP init_vipsSEXP, SEXP shutdown_vipsSEXP, SEXP thread_numSEXP, SEXP verboseSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -143,7 +143,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const bool >::type init_vips(init_vipsSEXP);
     Rcpp::traits::input_parameter< const bool >::type shutdown_vips(shutdown_vipsSEXP);
     Rcpp::traits::input_parameter< const int >::type thread_num(thread_numSEXP);
-    rcpp_result_gen = Rcpp::wrap(get_spot_subspot_tiles_from_image(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num));
+    Rcpp::traits::input_parameter< const bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(get_spot_subspot_tiles_from_image(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num, verbose));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -154,7 +155,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesSpace_iterate_t", (DL_FUNC) &_BayesSpace_iterate_t, 12},
     {"_BayesSpace_iterate_t_vvv", (DL_FUNC) &_BayesSpace_iterate_t_vvv, 12},
     {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 20},
-    {"_BayesSpace_get_spot_subspot_tiles_from_image", (DL_FUNC) &_BayesSpace_get_spot_subspot_tiles_from_image, 8},
+    {"_BayesSpace_get_spot_subspot_tiles_from_image", (DL_FUNC) &_BayesSpace_get_spot_subspot_tiles_from_image, 9},
     {NULL, NULL, 0}
 };
 

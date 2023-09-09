@@ -7,7 +7,7 @@
 .prepare_inputs(
   sce,
   subspots,
-  use.dimred = c(PCA = 15),
+  use.dimred = list(PCA = seq_len(15)),
   use.subspot.dimred = NULL,
   jitter_prior = 0.3,
   calc.neighbors = TRUE,
