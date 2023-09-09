@@ -131,14 +131,21 @@ Mode <- function(x) {
 #' @importFrom stats cov
 #' @importFrom magrittr %>%
 .prepare_inputs <- function(
-    sce, use.dimred = "PCA", d = 15,
-    positions = NULL, position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
-    radius = NULL, xdist = NULL, ydist = NULL) {
+    sce, subspots, use.dimred = list(PCA = seq_len(15)), use.subspot.dimred = NULL,
+    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,
+    init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
+    position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
+    radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
+    verbose = FALSE) {
   inputs <- list()
 
   ## PCs on spot-level (to be enhanced)
   spotPCs <- .check_dimred(sce, use.dimred)[[1]]
-  inputs$d2enhance <- sum(spotPCs$name)
+  inputs$d2enhance <- sum(vapply(
+    names(spotPCs$name),
+    function(x) length(spotPCs$name[[x]]),
+    FUN.VALUE = integer(1)
+  ))
 
   ## PCs on subspot-level (fixed)
   subspotPCs <- .check_dimred(sce, use.subspot.dimred)
@@ -418,7 +425,7 @@ getRDS <- function(dataset, sample, cache = TRUE) {
 #' @return A list of combined reducedDim features
 #'
 #' @keywords internal
-#' @importFrom purrr discard
+#' @importFrom purrr keep discard compact
 .check_dimred <- function(sce, name) {
   ret <- list()
 
@@ -431,12 +438,39 @@ getRDS <- function(dataset, sample, cache = TRUE) {
     )
   }
 
-  name <- name[name > 0]
+  reduced_dim <- compact(sapply(
+    names(name),
+    function(x) {
+      if (x %in% reducedDimNames(sce)) {
+        if (length(name[[x]]) == 1 && name[[x]] == -1) {
+          return(seq_len(dim(reducedDim(sce, x))[2]))
+        }
 
-  reduced_dim <- name[names(name)[names(name) %in% reducedDimNames(sce)]]
+        return(keep(name[[x]], function(y) y <= dim(reducedDim(sce, x))[2]))
+      }
+
+      NULL
+    },
+    simplify = FALSE
+  ))
   left_over <- discard(names(name), function(x) x %in% names(reduced_dim))
+  names(left_over) <- left_over
 
-  metadata <- name[left_over[left_over %in% names(metadata(sce)[["BayesSpace.data"]])]]
+  metadata <- compact(sapply(
+    left_over,
+    function(x) {
+      if (x %in% names(metadata(sce)[["BayesSpace.data"]])) {
+        if (length(name[[x]]) == 1 && name[[x]] == -1) {
+          return(seq_len(dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
+        }
+
+        return(keep(name[[x]], function(y) y <= dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
+      }
+
+      NULL
+    },
+    simplify = FALSE
+  ))
   left_over <- discard(left_over, function(x) x %in% names(metadata))
 
   if (!is.null(reduced_dim) && length(reduced_dim) > 0) {
@@ -474,8 +508,7 @@ getRDS <- function(dataset, sample, cache = TRUE) {
                 function(y) {
                   .Y <- ret[[x]]$func(sce, y)
                   colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
-                  .d <- min(ncol(.Y), ret[[x]]$name[y])
-                  .Y[, seq_len(.d), drop = FALSE]
+                  .Y[, ret[[x]]$name[[y]], drop = FALSE]
                 }
               )
             )

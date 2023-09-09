@@ -284,7 +284,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesSpace_iterate_vvv", (DL_FUNC) &_BayesSpace_iterate_vvv, 12},
     {"_BayesSpace_iterate_t", (DL_FUNC) &_BayesSpace_iterate_t, 12},
     {"_BayesSpace_iterate_t_vvv", (DL_FUNC) &_BayesSpace_iterate_t_vvv, 12},
-    {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 19},
+    {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 20},
     {"_BayesSpace_get_spot_subspot_tiles_from_image",
      (DL_FUNC) &_BayesSpace_get_spot_subspot_tiles_from_image, 8},
     {NULL, NULL, 0}
