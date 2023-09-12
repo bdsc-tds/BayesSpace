@@ -288,9 +288,6 @@ __get_spot_subspot_tiles_from_image(
   );
   subspot_barcodes = std::vector<std::string>(6 * barcodes.length());
 
-  // Path to spot and subspot tiles.
-  std::vector<std::tuple<std::string, std::filesystem::path>> tile_paths(7);
-
   // Masks for spot and subspot images.
   const std::vector<std::tuple<vips::VImage, double, int>> masks =
       prepare_masks(2 * __spot_radius_pxl, img.bands());
@@ -318,6 +315,9 @@ __get_spot_subspot_tiles_from_image(
   for (int i = 0; i < barcodes.length(); i++) {
     pb.tick();
 
+    // Path to spot and subspot tiles.
+    std::vector<std::tuple<std::string, std::filesystem::path>> tile_paths(7);
+
 #ifdef _OPENMP
 #pragma omp atomic update
     thread_hits[omp_get_thread_num()]++;
@@ -328,9 +328,13 @@ __get_spot_subspot_tiles_from_image(
             __subspot_output_path, tile_paths
         )) {
       for (int j = 0; j < 7; j++) {
-        if (j > 0)
-          subspot_barcodes[(j - 1) * barcodes.length() + i] =
-              std::get<0>(tile_paths[j]);
+        if (j > 0) {
+#pragma omp critical
+          {
+            subspot_barcodes[(j - 1) * barcodes.length() + i] =
+                std::get<0>(tile_paths[j]);
+          }
+        }
 
         flatten_image(
             vips::VImage::new_from_file(std::get<1>(tile_paths[j]).c_str()),
@@ -362,8 +366,11 @@ __get_spot_subspot_tiles_from_image(
               __spot_radius_pxl
           );
 
-          subspot_barcodes[(j - 1) * barcodes.length() + i] =
-              std::get<0>(tile_paths[j]);
+#pragma omp critical
+          {
+            subspot_barcodes[(j - 1) * barcodes.length() + i] =
+                std::get<0>(tile_paths[j]);
+          }
         }
 
         flatten_image(
