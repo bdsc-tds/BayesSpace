@@ -214,7 +214,7 @@ imageFeaturePlot <- function(
       )
       metadata(.spot$data) <- .metadata
       
-      .spot$d <- min(d["pca"], dim(.spot$data)[1])
+      .spot$d <- seq_len(min(d["pca"], dim(.spot$data)[1]))
       .spot$display <- display$pca
       
       plot.sce$spot_pca <- .spot
@@ -234,7 +234,7 @@ imageFeaturePlot <- function(
       )
       metadata(.spot$data) <- .metadata
       
-      .spot$d <- min(d["vae"], dim(.spot$data)[1])
+      .spot$d <- seq_len(min(d["vae"], dim(.spot$data)[1]))
       .spot$display <- display$vae
       
       plot.sce$spot_vae <- .spot
@@ -253,16 +253,14 @@ imageFeaturePlot <- function(
     
     if (datatype %in% c("pca", "both")) {
       .subspot$subspot_pca <- list(
-        name = "subspot_image_feats_pcs",
-        d = d["pca"],
+        d = list(subspot_image_feats_pcs = seq_len(d["pca"])),
         display = display$pca
       )
     }
     
     if (datatype %in% c("vae", "both")) {
       .subspot$subspot_vae <- list(
-        name = "subspot_image_feats",
-        d = d["vae"],
+        d = list(subspot_image_feats = seq_len(d["vae"])),
         display = display$vae
       )
     }
@@ -272,11 +270,11 @@ imageFeaturePlot <- function(
       sapply(
         .subspot,
         function(x) {
-          assert_that(x$name %in% names(metadata(sce)$BayesSpace.data))
+          assert_that(names(x$d) %in% names(metadata(sce)$BayesSpace.data))
           
           sce_subspot <- .prepare_inputs(
             sce, subspots = subspots,
-            use.subspot.dimred = setNames(x$d, x$name),
+            use.subspot.dimred = x$d,
             calc.neighbors = FALSE, calc.init = FALSE,
             positions = NULL, position.cols = position.cols,
             platform = platform
