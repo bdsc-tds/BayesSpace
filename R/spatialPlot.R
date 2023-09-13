@@ -644,7 +644,7 @@ imageFeaturePlot <- function(
           )
           metadata(.subspot$data) <- metadata(sce_subspot)
           
-          .subspot$d <- min(x$d, dim(.subspot$data)[1])
+          .subspot$d <- x$d[[1]]
           .subspot$display <- x$display
           
           .subspot
@@ -659,7 +659,7 @@ imageFeaturePlot <- function(
     function(x) {
       wrap_plots(
         lapply(
-          rownames(x$data)[seq_len(x$d)],
+          rownames(x$data)[x$d],
           function(y) featurePlot(
             x$data, y, assay.type = "counts",
             diverging = diverging, low = low, high = high, mid = mid,
