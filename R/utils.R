@@ -450,9 +450,11 @@ getRDS <- function(dataset, sample, cache = TRUE) {
     names(name),
     function(x) {
       if (x %in% reducedDimNames(sce)) {
-        if (length(name[[x]]) == 1 && name[[x]] == -1) {
+        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0))
+          return(0)
+        
+        if (length(name[[x]]) == 1 && name[[x]] == -1)
           return(seq_len(dim(reducedDim(sce, x))[2]))
-        }
         
         return(keep(name[[x]], function(y) y <= dim(reducedDim(sce, x))[2]))
       }
@@ -468,9 +470,11 @@ getRDS <- function(dataset, sample, cache = TRUE) {
     left_over,
     function(x) {
       if (x %in% names(metadata(sce)[["BayesSpace.data"]])) {
-        if (length(name[[x]]) == 1 && name[[x]] == -1) {
+        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0))
+          return(0)
+        
+        if (length(name[[x]]) == 1 && name[[x]] == -1)
           return(seq_len(dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
-        }
         
         return(keep(name[[x]], function(y) y <= dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
       }
@@ -500,29 +504,37 @@ getRDS <- function(dataset, sample, cache = TRUE) {
     ))
   
   if (length(ret) > 0)
-    ret <- sapply(
-      names(ret),
-      function(x) {
-        c(
-          ret[[x]],
-          list(
-            PCs = do.call(
-              cbind,
-              lapply(
-                names(ret[[x]]$name),
-                function(y) {
-                  .Y <- ret[[x]]$func(sce, y)
-                  colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
-                  .Y[, ret[[x]]$name[[y]], drop = FALSE]
-                }
+    ret <- discard(
+      sapply(
+        names(ret),
+        function(x) {
+          c(
+            ret[[x]],
+            list(
+              PCs = do.call(
+                cbind,
+                lapply(
+                  names(ret[[x]]$name),
+                  function(y) {
+                    if (is.null(ret[[x]]$name[[y]]) || (length(ret[[x]]$name[[y]]) == 1 && ret[[x]]$name[[y]] == 0))
+                      return(NULL)
+                    
+                    .Y <- ret[[x]]$func(sce, y)
+                    colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
+                    .Y[, ret[[x]]$name[[y]], drop = FALSE]
+                  }
+                )
               )
             )
           )
-        )
-      },
-      simplify = FALSE
+        },
+        simplify = FALSE
+      ),
+      function(x) is.null(x$PCs)
     )
-  else ret <- NULL
+  
+  if (is.null(ret) || length(ret) == 0)
+    ret <- NULL
   
   ret
 }
