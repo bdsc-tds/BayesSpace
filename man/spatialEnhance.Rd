@@ -54,7 +54,8 @@ of rows and row names. If provided, cluster on these features directly.}
 
 \item{subspot.d}{A vector of principal components from the corresponding H&E
 image to use during the clustering on the subspot-level, if such data is
-available (by default \code{seq_len(5)}; ignored if no such data).}
+available (by default \code{seq_len(5)}; set to \code{NULL} or \code{0}
+if no such data).}
 
 \item{init}{Initial cluster assignments for spots.}
 
