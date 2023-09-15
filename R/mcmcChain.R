@@ -205,7 +205,7 @@ NULL
     out$plogLik <- as.matrix(out$plogLik)
     colnames(out$plogLik) <- c("pLogLikelihood")
     if (method == "enhance") {
-        out$Y <- .flatten_matrix_list(out$Y, "Y", n, d)
+        out$Y <- .flatten_matrix_list(out$Y, "Y", n, out$d2enhance)
         out$Ychange <- as.matrix(out$Ychange)
         colnames(out$Ychange) <- c("Ychange")
     }
