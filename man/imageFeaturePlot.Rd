@@ -8,7 +8,7 @@ imageFeaturePlot(
   sce,
   datatype = c("pca", "vae", "both"),
   res = c("spot", "subspot", "both"),
-  d = c(pca = 5, vae = 64),
+  d = list(pca = seq_len(5), vae = seq_len(64)),
   display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
   platform = c("Visium", "ST"),
   diverging = FALSE,

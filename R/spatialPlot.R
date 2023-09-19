@@ -189,10 +189,11 @@ featurePlot <- function(sce, feature,
 #' @importFrom SummarizedExperiment rownames
 #' @importFrom S4Vectors metadata metadata<-
 #' @importFrom patchwork wrap_plots
+#' @importFrom purrr keep
 #' @export
 imageFeaturePlot <- function(
     sce, datatype = c("pca", "vae", "both"),
-    res = c("spot", "subspot", "both"), d = c(pca = 5, vae = 64),
+    res = c("spot", "subspot", "both"), d = list(pca = seq_len(5), vae = seq_len(64)),
     display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
     platform = c("Visium", "ST"), diverging = FALSE, low = NULL, high = NULL,
     mid = NULL, color = NULL, ...) {
@@ -223,7 +224,7 @@ imageFeaturePlot <- function(
       )
       metadata(.spot$data) <- .metadata
 
-      .spot$d <- min(d["pca"], dim(.spot$data)[1])
+      .spot$d <- keep(d$pca, function(x) x <= dim(.spot$data)[1])
       .spot$display <- display$pca
 
       plot.sce$spot_pca <- .spot
@@ -243,7 +244,7 @@ imageFeaturePlot <- function(
       )
       metadata(.spot$data) <- .metadata
 
-      .spot$d <- min(d["vae"], dim(.spot$data)[1])
+      .spot$d <- keep(d$vae, function(x) x <= dim(.spot$data)[1])
       .spot$display <- display$vae
 
       plot.sce$spot_vae <- .spot
@@ -263,14 +264,16 @@ imageFeaturePlot <- function(
 
     if (datatype %in% c("pca", "both")) {
       .subspot$subspot_pca <- list(
-        d = list(subspot_image_feats_pcs = seq_len(d["pca"])),
+        d = list(subspot_image_feats_pcs = seq_len(max(d$pca))),
+        ext_d = d$pca,
         display = display$pca
       )
     }
 
     if (datatype %in% c("vae", "both")) {
       .subspot$subspot_vae <- list(
-        d = list(subspot_image_feats = seq_len(d["vae"])),
+        d = list(subspot_image_feats = seq_len(max(d$vae))),
+        ext_d = d$vae,
         display = display$vae
       )
     }
@@ -304,7 +307,7 @@ imageFeaturePlot <- function(
           )
           metadata(.subspot$data) <- metadata(sce_subspot)
 
-          .subspot$d <- min(x$d, dim(.subspot$data)[1])
+          .subspot$d <- x$ext_d
           .subspot$display <- x$display
 
           .subspot
