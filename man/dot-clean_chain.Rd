@@ -19,8 +19,8 @@ loop, others (\code{mu} and \code{Ychange}) need to be thinned afterwards.}
 List with standardized parameters
 }
 \description{
-1) Convert each parameter to matrix (n_iterations x n_indices) 
-2) Add appropriate colnames 
+1) Convert each parameter to matrix (n_iterations x n_indices)
+2) Add appropriate colnames
 3) Thin evenly (for enhance)
 }
 \keyword{internal}

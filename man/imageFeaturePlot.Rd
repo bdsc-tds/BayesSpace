@@ -18,6 +18,21 @@ imageFeaturePlot(
   color = NULL,
   ...
 )
+
+imageFeaturePlot(
+  sce,
+  datatype = c("pca", "vae", "both"),
+  res = c("spot", "subspot", "both"),
+  d = list(pca = seq_len(5), vae = seq_len(64)),
+  display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
+  platform = c("Visium", "ST"),
+  diverging = FALSE,
+  low = NULL,
+  high = NULL,
+  mid = NULL,
+  color = NULL,
+  ...
+)
 }
 \arguments{
 \item{sce}{SingleCellExperiment as the output of \code{spatialPreprocess}.}
@@ -52,11 +67,20 @@ specify the linewidth of these borders, is likely the most useful.}
 \value{
 Returns a list of ggplot objects, named either \code{spot},
   \code{subspot}, or both.
+
+Returns a list of ggplot objects, named either \code{spot},
+  \code{subspot}, or both.
 }
 \description{
 Plot features extracted from images.
+
+Plot features extracted from images.
 }
 \seealso{
+Other spatial plotting functions: 
+\code{\link{clusterPlot}()},
+\code{\link{featurePlot}()}
+
 Other spatial plotting functions: 
 \code{\link{clusterPlot}()},
 \code{\link{featurePlot}()}
