@@ -12,6 +12,7 @@
   jitter_prior = 0.3,
   calc.neighbors = TRUE,
   calc.init = TRUE,
+  q = NULL,
   init = NULL,
   init.method = c("spatialCluster", "mclust", "kmeans"),
   positions = NULL,

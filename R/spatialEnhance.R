@@ -172,7 +172,7 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "ST"),
 
   ## Prepare for inputs
   inputs <- .prepare_inputs(
-    sce,
+    sce, q = q,
     subspots = subspots,
     use.dimred = use.dimred,
     use.subspot.dimred = list(subspot_image_feats_pcs = subspot.d),

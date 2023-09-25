@@ -127,9 +127,10 @@ Mode <- function(x) {
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
 #' @importFrom purrr imap
+#' @importFrom assertthat assert_that
 .prepare_inputs <- function(
     sce, subspots, use.dimred = list(PCA = seq_len(15)), use.subspot.dimred = NULL,
-    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,
+    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, q = NULL, init = NULL,
     init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
     position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
     radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
@@ -220,7 +221,7 @@ Mode <- function(x) {
   }
 
   ## Initialize cluster assignments (use spatialCluster by default)
-  if (is.null(init)) {
+  if (calc.init && is.null(init)) {
     if (verbose) {
       message("Initializing clusters...")
     }
@@ -233,11 +234,13 @@ Mode <- function(x) {
       )
       assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
       init <- sce$spatial.cluster
+      inputs$init <- rep(init, subspots)
     } else {
-      init <- .init_cluster(inputs$PCs, q, init, init.method)
+      assert_that(!is.null(q) && q > 0)
+      
+      inputs$init <- .init_cluster(inputs$PCs, q, init, init.method)
     }
   }
-  inputs$init <- rep(init, subspots)
 
   ## Create an SCE object for subspot
   colnames(.PCs2enhance) <- vapply(
