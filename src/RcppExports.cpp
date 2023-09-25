@@ -148,7 +148,7 @@ List iterate_deconv(
     arma::mat &Y, const List &df_j, const bool tdist, const int nrep,
     const int n, const int n0, const int d, const int d_subspot,
     const double gamma, const int q, const arma::uvec &init, const int subspots,
-    const bool verbose, const double jitter_scale, const double c,
+    const bool verbose, double jitter_scale, const double c,
     const NumericVector &mu0, const arma::mat &lambda0, const double alpha,
     const double beta, const int thread_num
 );
@@ -176,9 +176,7 @@ _BayesSpace_iterate_deconv(
   Rcpp::traits::input_parameter<const arma::uvec &>::type init(initSEXP);
   Rcpp::traits::input_parameter<const int>::type subspots(subspotsSEXP);
   Rcpp::traits::input_parameter<const bool>::type verbose(verboseSEXP);
-  Rcpp::traits::input_parameter<const double>::type jitter_scale(
-      jitter_scaleSEXP
-  );
+  Rcpp::traits::input_parameter<double>::type jitter_scale(jitter_scaleSEXP);
   Rcpp::traits::input_parameter<const double>::type c(cSEXP);
   Rcpp::traits::input_parameter<const NumericVector &>::type mu0(mu0SEXP);
   Rcpp::traits::input_parameter<const arma::mat &>::type lambda0(lambda0SEXP);

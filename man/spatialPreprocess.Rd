@@ -50,7 +50,7 @@ Default to \code{FALSE} for better performance.}
 
 \item{h2o.max.mem}{The maximum amount of memory that h2o uses.}
 
-\item{n.PCs.image}{The number of PCs to be extracted from the image (if 
+\item{n.PCs.image}{The number of PCs to be extracted from the image (if
 available).}
 
 \item{h2o.max.mem}{The maximum amount of memory that h2o uses.}

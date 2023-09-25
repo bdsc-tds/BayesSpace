@@ -14,8 +14,7 @@ readVisium(
   init.backend = TRUE,
   shutdown.backend = TRUE,
   cores = 1,
-  num.spots = -1,
-  verbose = FALSE
+  num.spots = -1
 )
 
 read10Xh5(
@@ -26,8 +25,7 @@ read10Xh5(
   init.backend = TRUE,
   shutdown.backend = TRUE,
   cores = 1,
-  num.spots = -1,
-  verbose = FALSE
+  num.spots = -1
 )
 
 create_tiles(
@@ -55,7 +53,7 @@ must also contain a file for spot positions at
 (To understand the output directory, refer to the corresponding
 \href{https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/output/overview}{10X Genomics help page}.)}
 
-\item{fullres.image}{Single H&E brightfield image in either TIFF or JPG 
+\item{fullres.image}{Single H&E brightfield image in either TIFF or JPG
 format; used as input to "spaceranger count".}
 
 \item{tile.image.dir}{Path to the directory of tile images.}

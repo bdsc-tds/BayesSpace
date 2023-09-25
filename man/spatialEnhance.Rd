@@ -115,7 +115,7 @@ the latter case, a list of values (power of 2) will be created}
   By default, the \code{assays} of this object are empty, and the enhanced
   resolution PCs are stored as a reduced dimensionality result accessible
   with \code{reducedDim(sce, 'PCA')}.
-  
+
 \code{coresTune} returns the output of \code{microbenchmark}.
 
 \code{adjustClusterLabels} adjusts the cluster labels from the MCMC samples

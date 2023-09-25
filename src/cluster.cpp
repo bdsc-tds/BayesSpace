@@ -632,7 +632,7 @@ iterate_deconv(
     arma::mat &Y, const List &df_j, const bool tdist, const int nrep,
     const int n, const int n0, const int d, const int d_subspot,
     const double gamma, const int q, const arma::uvec &init, const int subspots,
-    const bool verbose, const double jitter_scale, const double c,
+    const bool verbose, double jitter_scale, const double c,
     const NumericVector &mu0, const arma::mat &lambda0, const double alpha,
     const double beta, const int thread_num = 1
 ) {
@@ -839,6 +839,8 @@ iterate_deconv(
           const int yesUpdate = sample(Ysample, 1, true, probsY)[0];
           if (yesUpdate == 1) {
             Y(j0_vector * n0 + j0, d_vector) = Y_new.rows(j0_vector * n0 + j0);
+
+            num_accepts[j0]++;
             updateCounter++;
           }
 
