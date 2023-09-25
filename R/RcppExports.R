@@ -25,6 +25,10 @@ get_spot_subspot_tiles_from_image <- function(barcodes, spot_center_coordinates,
     .Call(`_BayesSpace_get_spot_subspot_tiles_from_image`, barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num, verbose)
 }
 
+get_spot_subspot_tiles_from_image <- function(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips = TRUE, shutdown_vips = TRUE, thread_num = 1L, verbose = FALSE) {
+    .Call(`_BayesSpace_get_spot_subspot_tiles_from_image`, barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num, verbose)
+}
+
 get_spot_subspot_tiles_from_image <- function(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips = TRUE, shutdown_vips = TRUE, thread_num = 1L) {
     .Call(`_BayesSpace_get_spot_subspot_tiles_from_image`, barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num)
 }

@@ -126,10 +126,7 @@ Mode <- function(x) {
 #' @keywords internal
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
-#' @importFrom S4Vectors metadata metadata<-
-#' @importFrom purrr imap compact
-#' @importFrom stats cov
-#' @importFrom magrittr %>%
+#' @importFrom purrr imap
 .prepare_inputs <- function(
     sce, subspots, use.dimred = list(PCA = seq_len(15)), use.subspot.dimred = NULL,
     jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,

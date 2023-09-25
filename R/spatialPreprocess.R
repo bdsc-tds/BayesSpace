@@ -143,7 +143,7 @@ extractImageFeatures <- function(images, init = TRUE, shutdown = TRUE,
     training_frame = features,
     autoencoder = T,
     hidden = h2o.hidden.layer.size,
-    activation = 'Tanh'
+    activation = "Tanh"
   )
   img.feats <- as.matrix(h2o.deepfeatures(vae.model, features, layer = 1))
 
