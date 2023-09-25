@@ -1,5 +1,5 @@
 // [[Rcpp::plugins("cpp11")]]
-// [[Rcpp::depends(RcppArmadillo, RcppProgress)]]
+// [[Rcpp::depends(RcppArmadillo)]]
 #include "utils.h"
 #include "vips/vips8"
 #include <RcppArmadillo.h>
