@@ -126,13 +126,11 @@ Mode <- function(x) {
 #' @keywords internal
 #'
 #' @importFrom SingleCellExperiment reducedDimNames
-#' @importFrom S4Vectors metadata metadata<-
-#' @importFrom purrr imap compact
-#' @importFrom stats cov
-#' @importFrom magrittr %>%
+#' @importFrom purrr imap
+#' @importFrom assertthat assert_that
 .prepare_inputs <- function(
     sce, subspots, use.dimred = list(PCA = seq_len(15)), use.subspot.dimred = NULL,
-    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, init = NULL,
+    jitter_prior = 0.3, calc.neighbors = TRUE, calc.init = TRUE, q = NULL, init = NULL,
     init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
     position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
     radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
@@ -227,25 +225,25 @@ Mode <- function(x) {
   }
 
   ## Initialize cluster assignments (use spatialCluster by default)
-  if (calc.init) {
-    if (is.null(init)) {
-      if (verbose) {
-        message("Initializing clusters...")
-      }
-
-      init.method <- match.arg(init.method)
-      if (init.method == "spatialCluster") {
-        msg <- paste0(
-          "Must run spatialCluster on sce before enhancement ",
-          "if using spatialCluster to initialize."
-        )
-        assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
-        init <- sce$spatial.cluster
-      } else {
-        init <- .init_cluster(inputs$PCs, q, init, init.method)
-      }
+  if (calc.init && is.null(init)) {
+    if (verbose) {
+      message("Initializing clusters...")
     }
-    inputs$init <- rep(init, subspots)
+
+    init.method <- match.arg(init.method)
+    if (init.method == "spatialCluster") {
+      msg <- paste0(
+        "Must run spatialCluster on sce before enhancement ",
+        "if using spatialCluster to initialize."
+      )
+      assert_that("spatial.cluster" %in% colnames(colData(sce)), msg = msg)
+      init <- sce$spatial.cluster
+      inputs$init <- rep(init, subspots)
+    } else {
+      assert_that(!is.null(q) && q > 0)
+      
+      inputs$init <- .init_cluster(inputs$PCs, q, init, init.method)
+    }
   }
 
   ## Create an SCE object for subspot
