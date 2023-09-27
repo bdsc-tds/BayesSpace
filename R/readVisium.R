@@ -101,7 +101,7 @@ readVisium <- function(dirname, fullres.image = NULL, tile.image.dir = NULL,
       sce <- sce[, seq_len(num.spots)]
     }
 
-    flattened_tiles <- create_tiles(
+    flattened_tiles <- createTiles(
       sce, fullres.image, scale_factor_fname,
       tile.image.dir, num.spots, init.backend,
       shutdown.backend, cores, verbose
@@ -208,7 +208,7 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
       sce <- sce[, seq_len(num.spots)]
     }
 
-    flattened_tiles <- create_tiles(
+    flattened_tiles <- createTiles(
       sce, fullres.image, scale_factor_fname,
       tile.image.dir, num.spots, init.backend,
       shutdown.backend, cores
@@ -224,7 +224,7 @@ read10Xh5 <- function(dirname, fname = "filtered_feature_bc_matrix.h5",
 #' @export
 #' @importFrom rjson fromJSON
 #' @rdname readVisium
-create_tiles <- function(sce, fullres.image, scale.factor.fname,
+createTiles <- function(sce, fullres.image, scale.factor.fname,
                          tile.image.dir = NULL, num.spots = dim(sce)[2],
                          init.backend = TRUE, shutdown.backend = TRUE,
                          cores = 1, verbose = FALSE) {

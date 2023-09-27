@@ -632,9 +632,9 @@ iterate_deconv(
     arma::mat &Y, const List &df_j, const bool tdist, const int nrep,
     const int n, const int n0, const int d, const int d_subspot,
     const double gamma, const int q, const arma::uvec &init, const int subspots,
-    const bool verbose, double jitter_scale, const double c,
-    const NumericVector &mu0, const arma::mat &lambda0, const double alpha,
-    const double beta, const int thread_num = 1
+    const bool verbose, double jitter_scale, const int adapt_before,
+    const double c, const NumericVector &mu0, const arma::mat &lambda0,
+    const double alpha, const double beta, const int thread_num = 1
 ) {
   const int d_total = d + d_subspot;
 
@@ -875,7 +875,8 @@ iterate_deconv(
 #endif
 
         // Adaptive MCMC.
-        if (jitter_scale == 0.0 && i > 10) {
+        if (jitter_scale == 0.0 && i > 10 &&
+            (adapt_before == 0 || i <= adapt_before)) {
           adaptive_mtx[j] = adaptive_mcmc(
               static_cast<double>(num_accepts[j % n0]) /
                   (num_accepts[j % n0] + num_rejects[j % n0]),

@@ -148,17 +148,17 @@ List iterate_deconv(
     arma::mat &Y, const List &df_j, const bool tdist, const int nrep,
     const int n, const int n0, const int d, const int d_subspot,
     const double gamma, const int q, const arma::uvec &init, const int subspots,
-    const bool verbose, double jitter_scale, const double c,
-    const NumericVector &mu0, const arma::mat &lambda0, const double alpha,
-    const double beta, const int thread_num
+    const bool verbose, double jitter_scale, const int adapt_before,
+    const double c, const NumericVector &mu0, const arma::mat &lambda0,
+    const double alpha, const double beta, const int thread_num
 );
 RcppExport SEXP
 _BayesSpace_iterate_deconv(
     SEXP YSEXP, SEXP df_jSEXP, SEXP tdistSEXP, SEXP nrepSEXP, SEXP nSEXP,
     SEXP n0SEXP, SEXP dSEXP, SEXP d_subspotSEXP, SEXP gammaSEXP, SEXP qSEXP,
     SEXP initSEXP, SEXP subspotsSEXP, SEXP verboseSEXP, SEXP jitter_scaleSEXP,
-    SEXP cSEXP, SEXP mu0SEXP, SEXP lambda0SEXP, SEXP alphaSEXP, SEXP betaSEXP,
-    SEXP thread_numSEXP
+    SEXP adapt_beforeSEXP, SEXP cSEXP, SEXP mu0SEXP, SEXP lambda0SEXP,
+    SEXP alphaSEXP, SEXP betaSEXP, SEXP thread_numSEXP
 ) {
   BEGIN_RCPP
   Rcpp::RObject rcpp_result_gen;
@@ -177,6 +177,7 @@ _BayesSpace_iterate_deconv(
   Rcpp::traits::input_parameter<const int>::type subspots(subspotsSEXP);
   Rcpp::traits::input_parameter<const bool>::type verbose(verboseSEXP);
   Rcpp::traits::input_parameter<double>::type jitter_scale(jitter_scaleSEXP);
+  Rcpp::traits::input_parameter<const int>::type adapt_before(adapt_beforeSEXP);
   Rcpp::traits::input_parameter<const double>::type c(cSEXP);
   Rcpp::traits::input_parameter<const NumericVector &>::type mu0(mu0SEXP);
   Rcpp::traits::input_parameter<const arma::mat &>::type lambda0(lambda0SEXP);
@@ -185,7 +186,8 @@ _BayesSpace_iterate_deconv(
   Rcpp::traits::input_parameter<const int>::type thread_num(thread_numSEXP);
   rcpp_result_gen = Rcpp::wrap(iterate_deconv(
       Y, df_j, tdist, nrep, n, n0, d, d_subspot, gamma, q, init, subspots,
-      verbose, jitter_scale, c, mu0, lambda0, alpha, beta, thread_num
+      verbose, jitter_scale, adapt_before, c, mu0, lambda0, alpha, beta,
+      thread_num
   ));
   return rcpp_result_gen;
   END_RCPP
@@ -241,7 +243,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_BayesSpace_iterate_vvv", (DL_FUNC) &_BayesSpace_iterate_vvv, 12},
     {"_BayesSpace_iterate_t", (DL_FUNC) &_BayesSpace_iterate_t, 12},
     {"_BayesSpace_iterate_t_vvv", (DL_FUNC) &_BayesSpace_iterate_t_vvv, 12},
-    {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 20},
+    {"_BayesSpace_iterate_deconv", (DL_FUNC) &_BayesSpace_iterate_deconv, 21},
     {"_BayesSpace_get_spot_subspot_tiles_from_image",
      (DL_FUNC) &_BayesSpace_get_spot_subspot_tiles_from_image, 9},
     {NULL, NULL, 0}
