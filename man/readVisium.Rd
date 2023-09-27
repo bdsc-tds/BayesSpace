@@ -3,7 +3,7 @@
 \name{readVisium}
 \alias{readVisium}
 \alias{read10Xh5}
-\alias{create_tiles}
+\alias{createTiles}
 \alias{counts2h5}
 \title{Load a Visium spatial dataset as a SingleCellExperiment.}
 \usage{
@@ -28,7 +28,7 @@ read10Xh5(
   num.spots = -1
 )
 
-create_tiles(
+createTiles(
   sce,
   fullres.image,
   scale.factor.fname,
