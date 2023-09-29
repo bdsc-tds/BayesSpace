@@ -524,7 +524,13 @@ getRDS <- function(dataset, sample, cache = TRUE) {
                     
                     .Y <- ret[[x]]$func(sce, y)
                     colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
-                    .Y[, ret[[x]]$name[[y]], drop = FALSE]
+                    
+                    .valid_spots <- rowSums(sapply(
+                      colnames(sce),
+                      function(z) grepl(paste0("^", z, ".*"), rownames(.Y))
+                    ))
+                    
+                    .Y[rownames(.Y)[.valid_spots > 0], ret[[x]]$name[[y]], drop = FALSE]
                   }
                 )
               )
