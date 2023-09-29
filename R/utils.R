@@ -265,6 +265,11 @@ Mode <- function(x) {
       "image" = .PCs2fix
     ))
   )
+  
+  # Add metadata to new SingleCellExperiment object
+  metadata(inputs$sce)$BayesSpace.data <- list()
+  metadata(inputs$sce)$BayesSpace.data$platform <- platform
+  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
 
   inputs
 }
