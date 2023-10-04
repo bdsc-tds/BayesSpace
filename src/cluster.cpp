@@ -638,6 +638,15 @@ iterate_deconv(
 ) {
   const int d_total = d + d_subspot;
 
+  std::vector<int> thread_hits;
+
+#ifdef _OPENMP
+  omp_set_max_active_levels(2);
+  omp_set_num_threads(thread_num);
+
+  for (int i = 0; i < thread_num; i++)
+    thread_hits.emplace_back(0);
+
   if (verbose) {
     std::cout << "[DEBUG] The number of threads is " << thread_num << std::endl;
   }
@@ -786,8 +795,16 @@ iterate_deconv(
 
         const mat Y_j_prev = Y.rows(j0_vector * n0 + j0);
         mat Y_j_new(subspots, d_total);
-
         mat error_j = error.rows(j0_vector * n0 + j0);
+
+        if (jitter_scale == 0.0) {
+          for (int r = 0; r < subspots; r++) {
+            error_j.row(r) = trans(
+                adaptive_mtx[r * n0 + j0] *
+                resize(error_j.row(r), error_j.n_cols, 1)
+            );
+          }
+        }
 
         // Make sure that the sum of the error terms is zero.
         const rowvec error_mean = sum(error_j, 0) / subspots;

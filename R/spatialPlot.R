@@ -341,175 +341,7 @@ imageFeaturePlot <- function(
 }
 
 #' Plot features extracted from images.
-#' 
-#' @param sce SingleCellExperiment as the output of \code{spatialPreprocess}.
-#' @param datatype Type of data to plot, either features extracted from VAE,
-#'   the PCA features extracted from the results of VAE, or both.
-#' @param res Features from which resolution to plot.
-#' @param d A named vector for the numbers of features to plot.
-#' @param display An optional list of vectors, each vector have two numbers
-#'   specifying the number of rows and columns the feature plots to be
-#'   organized.
-#' @param platform Spatial sequencing platform. Used to determine spot layout
-#'   and neighborhood structure (Visium = hex, ST = square).
-#' @inheritParams featurePlot
-#' 
-#' @return Returns a list of ggplot objects, named either \code{spot},
-#'   \code{subspot}, or both.
-#' 
-#' @family spatial plotting functions
 #'
-#' @importFrom assertthat assert_that
-#' @importFrom SingleCellExperiment reducedDimNames SingleCellExperiment
-#' @importFrom SummarizedExperiment rownames
-#' @importFrom S4Vectors metadata metadata<-
-#' @importFrom patchwork wrap_plots
-#' @export
-imageFeaturePlot <- function(
-    sce, datatype = c("pca", "vae", "both"),
-    res = c("spot", "subspot", "both"), d = c(pca = 5, vae = 64),
-    display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
-    platform = c("Visium", "ST"), diverging = FALSE, low = NULL, high = NULL,
-    mid = NULL, color = NULL, ...
-) {
-  datatype <- match.arg(datatype)
-  res <- match.arg(res)
-  
-  plot.sce <- list()
-  
-  if (res %in% c("spot", "both")) {
-    .metadata <- list(
-      BayesSpace.data = list(
-        platform = metadata(sce)$BayesSpace.data$platform,
-        is.enhanced = metadata(sce)$BayesSpace.data$is.enhanced
-      )
-    )
-    
-    if (datatype %in% c("pca", "both")) {
-      assert_that("image" %in% reducedDimNames(sce))
-      
-      .spot <- list()
-      
-      .spot$data <- SingleCellExperiment(
-        assays = list(
-          counts = t(reducedDim(sce, "image"))
-        ),
-        rowData = colnames(reducedDim(sce, "image")),
-        colData = colData(sce)
-      )
-      metadata(.spot$data) <- .metadata
-      
-      .spot$d <- min(d["pca"], dim(.spot$data)[1])
-      .spot$display <- display$pca
-      
-      plot.sce$spot_pca <- .spot
-    }
-    
-    if (datatype %in% c("vae", "both")) {
-      assert_that("spot_image_feats" %in% names(metadata(sce)$BayesSpace.data))
-      
-      .spot <- list()
-      
-      .spot$data <- SingleCellExperiment(
-        assays = list(
-          counts = t(metadata(sce)$BayesSpace.data$spot_image_feats)
-        ),
-        rowData = colnames(metadata(sce)$BayesSpace.data$spot_image_feats),
-        colData = colData(sce)
-      )
-      metadata(.spot$data) <- .metadata
-      
-      .spot$d <- min(d["vae"], dim(.spot$data)[1])
-      .spot$display <- display$vae
-      
-      plot.sce$spot_vae <- .spot
-    }
-  }
-  
-  if (res %in% c("subspot", "both")) {
-    platform <- match.arg(platform)
-    if (platform == "Visium")
-      position.cols <- c("pxl_col_in_fullres", "pxl_row_in_fullres")
-    else if (platform == "ST")
-      position.cols <- c("array_col", "array_row")
-    subspots = ifelse(platform == "Visium", 6, 9)
-    
-    .subspot <- list()
-    
-    if (datatype %in% c("pca", "both")) {
-      .subspot$subspot_pca <- list(
-        name = "subspot_image_feats_pcs",
-        d = d["pca"],
-        display = display$pca
-      )
-    }
-    
-    if (datatype %in% c("vae", "both")) {
-      .subspot$subspot_vae <- list(
-        name = "subspot_image_feats",
-        d = d["vae"],
-        display = display$vae
-      )
-    }
-    
-    plot.sce <- c(
-      plot.sce,
-      sapply(
-        .subspot,
-        function(x) {
-          assert_that(x$name %in% names(metadata(sce)$BayesSpace.data))
-          
-          sce_subspot <- .prepare_inputs(
-            sce, subspots = subspots,
-            use.subspot.dimred = setNames(x$d, x$name),
-            calc.neighbors = FALSE, calc.init = FALSE,
-            positions = NULL, position.cols = position.cols,
-            platform = platform
-          )$sce
-          
-          .subspot <- list()
-          
-          .subspot$data <- SingleCellExperiment(
-            assays = list(
-              counts = t(reducedDim(sce_subspot, "image"))
-            ),
-            rowData = colnames(reducedDim(sce_subspot, "image")),
-            colData = colData(sce_subspot)
-          )
-          metadata(.subspot$data) <- metadata(sce_subspot)
-          
-          .subspot$d <- min(x$d, dim(.subspot$data)[1])
-          .subspot$display <- x$display
-          
-          .subspot
-        },
-        simplify = FALSE
-      )
-    )
-  }
-  
-  sapply(
-    plot.sce,
-    function(x) {
-      wrap_plots(
-        lapply(
-          rownames(x$data)[seq_len(x$d)],
-          function(y) featurePlot(
-            x$data, y, assay.type = "counts",
-            diverging = diverging, low = low, high = high, mid = mid,
-            color = color, ...
-          )
-        ),
-        nrow = x$display[1],
-        ncol = x$display[2]
-      )
-    },
-    simplify = FALSE
-  )
-}
-
-#' Plot features extracted from images.
-#' 
 #' @param sce SingleCellExperiment as the output of \code{spatialPreprocess}.
 #' @param datatype Type of data to plot, either features extracted from VAE,
 #'   the PCA features extracted from the results of VAE, or both.
@@ -521,10 +353,10 @@ imageFeaturePlot <- function(
 #' @param platform Spatial sequencing platform. Used to determine spot layout
 #'   and neighborhood structure (Visium = hex, ST = square).
 #' @inheritParams featurePlot
-#' 
+#'
 #' @return Returns a list of ggplot objects, named either \code{spot},
 #'   \code{subspot}, or both.
-#' 
+#'
 #' @family spatial plotting functions
 #'
 #' @importFrom assertthat assert_that
@@ -539,13 +371,12 @@ imageFeaturePlot <- function(
     res = c("spot", "subspot", "both"), d = list(pca = seq_len(5), vae = seq_len(64)),
     display = list(pca = c(NULL, NULL), vae = c(NULL, NULL)),
     platform = c("Visium", "ST"), diverging = FALSE, low = NULL, high = NULL,
-    mid = NULL, color = NULL, ...
-) {
+    mid = NULL, color = NULL, ...) {
   datatype <- match.arg(datatype)
   res <- match.arg(res)
-  
+
   plot.sce <- list()
-  
+
   if (res %in% c("spot", "both")) {
     .metadata <- list(
       BayesSpace.data = list(
@@ -553,12 +384,12 @@ imageFeaturePlot <- function(
         is.enhanced = metadata(sce)$BayesSpace.data$is.enhanced
       )
     )
-    
+
     if (datatype %in% c("pca", "both")) {
       assert_that("image" %in% reducedDimNames(sce))
-      
+
       .spot <- list()
-      
+
       .spot$data <- SingleCellExperiment(
         assays = list(
           counts = t(reducedDim(sce, "image"))
@@ -567,18 +398,18 @@ imageFeaturePlot <- function(
         colData = colData(sce)
       )
       metadata(.spot$data) <- .metadata
-      
+
       .spot$d <- keep(d$pca, function(x) x <= dim(.spot$data)[1])
       .spot$display <- display$pca
-      
+
       plot.sce$spot_pca <- .spot
     }
-    
+
     if (datatype %in% c("vae", "both")) {
       assert_that("spot_image_feats" %in% names(metadata(sce)$BayesSpace.data))
-      
+
       .spot <- list()
-      
+
       .spot$data <- SingleCellExperiment(
         assays = list(
           counts = t(metadata(sce)$BayesSpace.data$spot_image_feats)
@@ -587,24 +418,25 @@ imageFeaturePlot <- function(
         colData = colData(sce)
       )
       metadata(.spot$data) <- .metadata
-      
+
       .spot$d <- keep(d$vae, function(x) x <= dim(.spot$data)[1])
       .spot$display <- display$vae
-      
+
       plot.sce$spot_vae <- .spot
     }
   }
-  
+
   if (res %in% c("subspot", "both")) {
     platform <- match.arg(platform)
-    if (platform == "Visium")
+    if (platform == "Visium") {
       position.cols <- c("pxl_col_in_fullres", "pxl_row_in_fullres")
-    else if (platform == "ST")
+    } else if (platform == "ST") {
       position.cols <- c("array_col", "array_row")
-    subspots = ifelse(platform == "Visium", 6, 9)
-    
+    }
+    subspots <- ifelse(platform == "Visium", 6, 9)
+
     .subspot <- list()
-    
+
     if (datatype %in% c("pca", "both")) {
       .subspot$subspot_pca <- list(
         d = list(subspot_image_feats_pcs = seq_len(max(d$pca))),
@@ -612,7 +444,7 @@ imageFeaturePlot <- function(
         display = display$pca
       )
     }
-    
+
     if (datatype %in% c("vae", "both")) {
       .subspot$subspot_vae <- list(
         d = list(subspot_image_feats = seq_len(max(d$vae))),
@@ -620,24 +452,25 @@ imageFeaturePlot <- function(
         display = display$vae
       )
     }
-    
+
     plot.sce <- c(
       plot.sce,
       sapply(
         .subspot,
         function(x) {
           assert_that(names(x$d) %in% names(metadata(sce)$BayesSpace.data))
-          
+
           sce_subspot <- .prepare_inputs(
-            sce, subspots = subspots,
+            sce,
+            subspots = subspots,
             use.subspot.dimred = x$d,
             calc.neighbors = FALSE, calc.init = FALSE,
             positions = NULL, position.cols = position.cols,
             platform = platform
           )$sce
-          
+
           .subspot <- list()
-          
+
           .subspot$data <- SingleCellExperiment(
             assays = list(
               counts = t(reducedDim(sce_subspot, "image"))
@@ -646,28 +479,31 @@ imageFeaturePlot <- function(
             colData = colData(sce_subspot)
           )
           metadata(.subspot$data) <- metadata(sce_subspot)
-          
+
           .subspot$d <- x$ext_d
           .subspot$display <- x$display
-          
+
           .subspot
         },
         simplify = FALSE
       )
     )
   }
-  
+
   sapply(
     plot.sce,
     function(x) {
       wrap_plots(
         lapply(
           rownames(x$data)[x$d],
-          function(y) featurePlot(
-            x$data, y, assay.type = "counts",
-            diverging = diverging, low = low, high = high, mid = mid,
-            color = color, ...
-          )
+          function(y) {
+            featurePlot(
+              x$data, y,
+              assay.type = "counts",
+              diverging = diverging, low = low, high = high, mid = mid,
+              color = color, ...
+            )
+          }
         ),
         nrow = x$display[1],
         ncol = x$display[2]

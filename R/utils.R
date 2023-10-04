@@ -134,38 +134,37 @@ Mode <- function(x) {
     init.method = c("spatialCluster", "mclust", "kmeans"), positions = NULL,
     position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
     radius = NULL, xdist = NULL, ydist = NULL, platform = c("Visium", "ST"),
-    verbose = FALSE
-) {
-    inputs <- list()
-    
-    ## PCs on spot-level (to be enhanced)
-    spotPCs <- .check_dimred(sce, use.dimred)[[1]]
-    inputs$d2enhance <- sum(vapply(
-      names(spotPCs$name),
-      function(x) length(spotPCs$name[[x]]),
-      FUN.VALUE = integer(1)
-    ))
-    
-    ## PCs on subspot-level (fixed)
-    subspotPCs <- .check_dimred(sce, use.subspot.dimred)
-    if (!is.null(subspotPCs)) subspotPCs <- subspotPCs[[1]]
-    
-    n.spotPCs <- nrow(spotPCs$PCs)
-    
-    ## PCs to be enhanced on subspot-level
-    .PCs2enhance <- spotPCs$PCs[rep(seq_len(n.spotPCs), subspots), ]
-    rownames(.PCs2enhance) <- paste(
-      sce$barcode,
-      rep(seq_len(subspots), each = n.spotPCs),
-      sep = ":"
-    )
-    
-    ## PCs to be fixed on subspot-level
-    .PCs2fix <- NULL
-    if (!is.null(subspotPCs)) .PCs2fix <- subspotPCs$PCs
-    
-    ## The amount of jittering (the variance) for the prior distribution
-    inputs$c <- jitter_prior * 1 / (2 * mean(diag(cov(spotPCs$PCs))))
+    verbose = FALSE) {
+  inputs <- list()
+
+  ## PCs on spot-level (to be enhanced)
+  spotPCs <- .check_dimred(sce, use.dimred)[[1]]
+  inputs$d2enhance <- sum(vapply(
+    names(spotPCs$name),
+    function(x) length(spotPCs$name[[x]]),
+    FUN.VALUE = integer(1)
+  ))
+
+  ## PCs on subspot-level (fixed)
+  subspotPCs <- .check_dimred(sce, use.subspot.dimred)
+  if (!is.null(subspotPCs)) subspotPCs <- subspotPCs[[1]]
+
+  n.spotPCs <- nrow(spotPCs$PCs)
+
+  ## PCs to be enhanced on subspot-level
+  .PCs2enhance <- spotPCs$PCs[rep(seq_len(n.spotPCs), subspots), ]
+  rownames(.PCs2enhance) <- paste(
+    sce$barcode,
+    rep(seq_len(subspots), each = n.spotPCs),
+    sep = ":"
+  )
+
+  ## PCs to be fixed on subspot-level
+  .PCs2fix <- NULL
+  if (!is.null(subspotPCs)) .PCs2fix <- subspotPCs$PCs
+
+  ## The amount of jittering (the variance) for the prior distribution
+  inputs$c <- jitter_prior * 1 / (2 * mean(diag(cov(spotPCs$PCs))))
 
   ## pxl coordinates of spots
   if (is.null(positions)) {
@@ -197,19 +196,16 @@ Mode <- function(x) {
   .positions[, "x"] <- .positions[, "x"] + shift_long[, "Var1"]
   .positions[, "y"] <- .positions[, "y"] + shift_long[, "Var2"]
 
-  ## Calculate neighbors.
-  if (calc.neighbors) {
-    dist <- max(rowSums(abs(shift))) * 1.05
-    if (subspots == 9) {
-      dist <- dist / 2
-    }
-
-    if (verbose) {
-      message("Calculating neighbors...")
-    }
-
-    inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
+  ## Compute neighbors.
+  dist <- max(rowSums(abs(shift))) * 1.05
+  if (subspots == 9) {
+    dist <- dist / 2
   }
+
+  if (verbose) {
+    message("Calculating neighbors...")
+  }
+  inputs$df_j <- find_neighbors(.positions, dist, "manhattan")
 
   # Prepare colData for subspots
   .cdata <- .prepare_subspot_coldata(.positions, sce, subspots)
@@ -270,11 +266,6 @@ Mode <- function(x) {
     ))
   )
   
-  # Add metadata to new SingleCellExperiment object
-  metadata(inputs$sce)$BayesSpace.data <- list()
-  metadata(inputs$sce)$BayesSpace.data$platform <- platform
-  metadata(inputs$sce)$BayesSpace.data$is.enhanced <- TRUE
-
   # Add metadata to new SingleCellExperiment object
   metadata(inputs$sce)$BayesSpace.data <- list()
   metadata(inputs$sce)$BayesSpace.data$platform <- platform
@@ -451,40 +442,44 @@ getRDS <- function(dataset, sample, cache = TRUE) {
       simplify = FALSE
     )
   }
-  
+
   reduced_dim <- compact(sapply(
     names(name),
     function(x) {
       if (x %in% reducedDimNames(sce)) {
-        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0))
+        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0)) {
           return(0)
-        
-        if (length(name[[x]]) == 1 && name[[x]] == -1)
+        }
+
+        if (length(name[[x]]) == 1 && name[[x]] == -1) {
           return(seq_len(dim(reducedDim(sce, x))[2]))
-        
+        }
+
         return(keep(name[[x]], function(y) y <= dim(reducedDim(sce, x))[2]))
       }
-      
+
       NULL
     },
     simplify = FALSE
   ))
   left_over <- discard(names(name), function(x) x %in% names(reduced_dim))
   names(left_over) <- left_over
-  
+
   metadata <- compact(sapply(
     left_over,
     function(x) {
       if (x %in% names(metadata(sce)[["BayesSpace.data"]])) {
-        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0))
+        if (is.null(name[[x]]) || (length(name[[x]]) == 1 && name[[x]] == 0)) {
           return(0)
-        
-        if (length(name[[x]]) == 1 && name[[x]] == -1)
+        }
+
+        if (length(name[[x]]) == 1 && name[[x]] == -1) {
           return(seq_len(dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
-        
+        }
+
         return(keep(name[[x]], function(y) y <= dim(metadata(sce)[["BayesSpace.data"]][[x]])[2]))
       }
-      
+
       NULL
     },
     simplify = FALSE
@@ -510,8 +505,9 @@ getRDS <- function(dataset, sample, cache = TRUE) {
       "Cannot find the following reduced dimensions: ",
       paste0(left_over, collapse = ", ")
     ))
-  
-  if (length(ret) > 0)
+  }
+
+  if (length(ret) > 0) {
     ret <- discard(
       sapply(
         names(ret),
@@ -524,9 +520,10 @@ getRDS <- function(dataset, sample, cache = TRUE) {
                 lapply(
                   names(ret[[x]]$name),
                   function(y) {
-                    if (is.null(ret[[x]]$name[[y]]) || (length(ret[[x]]$name[[y]]) == 1 && ret[[x]]$name[[y]] == 0))
+                    if (is.null(ret[[x]]$name[[y]]) || (length(ret[[x]]$name[[y]]) == 1 && ret[[x]]$name[[y]] == 0)) {
                       return(NULL)
-                    
+                    }
+
                     .Y <- ret[[x]]$func(sce, y)
                     colnames(.Y) <- paste(y, colnames(.Y), sep = "_")
                     
@@ -546,10 +543,12 @@ getRDS <- function(dataset, sample, cache = TRUE) {
       ),
       function(x) is.null(x$PCs)
     )
-  
-  if (is.null(ret) || length(ret) == 0)
+  }
+
+  if (is.null(ret) || length(ret) == 0) {
     ret <- NULL
-  
+  }
+
   ret
 }
 
