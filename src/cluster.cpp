@@ -710,7 +710,14 @@ iterate_deconv(
   std::vector<mat> adaptive_mtx(n);
   if (jitter_scale == 0.0) {
     if (verbose) {
-      std::cout << "[DEBUG] Turning on adaptive MCMC... " << std::endl;
+      std::cout << "[DEBUG] Turning on adaptive MCMC ";
+
+      if (adapt_before == 0) {
+        std::cout << "throughout the entire chain." << std::endl;
+      } else {
+        std::cout << "only in the first " << adapt_before << " iterations."
+                  << std::endl;
+      }
     }
 
 #pragma omp parallel for
