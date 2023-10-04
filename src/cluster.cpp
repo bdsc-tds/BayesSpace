@@ -784,11 +784,9 @@ iterate_deconv(
       }
 
       // Multithreading to compute the MCMC kernel of Y.
-#pragma omp parallel for schedule(static)                                      \
-    shared(Y, Y_new, error, acceptance_prob, j0_vector, subspots, zero_vec,    \
-               mu_i_long, Y0, lambda_i, n0, w, c, updateCounter, thread_hits)  \
-    num_threads(thread_num)
+#pragma omp for
       for (int j0 = 0; j0 < n0; j0++) {
+#ifdef _OPENMP
 #pragma omp atomic update
         thread_hits[omp_get_thread_num()]++;
 #endif
@@ -857,7 +855,8 @@ iterate_deconv(
 
             num_accepts[j0]++;
             updateCounter++;
-          }
+          } else
+            num_rejects[j0]++;
 
           for (int r = 0; r < subspots; r++) {
             // Update w.
@@ -956,20 +955,25 @@ iterate_deconv(
         }
       }
 
-      List out = List::create(
-          _["z"] = df_sim_z, _["mu"] = df_sim_mu, _["lambda"] = df_sim_lambda,
-          _["weights"] = df_sim_w, _["Y"] = df_sim_Y, _["Ychange"] = Ychange,
-          _["plogLik"] = plogLik
-      );
-
-      indicators::show_console_cursor(true);
-
-#ifdef _OPENMP
-      if (verbose) {
-        print_thread_hits(thread_hits);
-      }
-#endif
-
-      return (out);
+      if ((i + 1) % 100 == 0 && early_stop > 0)
+        i = nrep;
+#pragma omp barrier
     }
   }
+
+  List out = List::create(
+      _["z"] = df_sim_z, _["mu"] = df_sim_mu, _["lambda"] = df_sim_lambda,
+      _["weights"] = df_sim_w, _["Y"] = df_sim_Y, _["Ychange"] = Ychange,
+      _["plogLik"] = plogLik
+  );
+
+  indicators::show_console_cursor(true);
+
+#ifdef _OPENMP
+  if (verbose) {
+    print_thread_hits(thread_hits);
+  }
+#endif
+
+  return (out);
+}

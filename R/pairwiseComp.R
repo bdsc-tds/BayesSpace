@@ -2,35 +2,40 @@
 #' @importFrom magrittr `%>%`
 #' @importFrom dplyr arrange distinct
 pairwiseComp <- function(data, func.comp, func.data = NULL, to.mat = TRUE) {
-  if (!is.null(func.data))
+  if (!is.null(func.data)) {
     data <- sapply(
       data,
       function(x) func.data(x),
       simplify = FALSE
     )
-  
+  }
+
   ret <- do.call(
     rbind,
     lapply(
       names(data),
-      function(x) do.call(
-        rbind,
-        lapply(
-          names(data),
-          function(y) data.frame(
-            var1 = x,
-            var2 = y,
-            val = func.comp(data[[x]], data[[y]])
+      function(x) {
+        do.call(
+          rbind,
+          lapply(
+            names(data),
+            function(y) {
+              data.frame(
+                var1 = x,
+                var2 = y,
+                val = func.comp(data[[x]], data[[y]])
+              )
+            }
           )
         )
-      )
+      }
     )
   ) %>%
     arrange(
       var1, var2
     )
-  
-  if (to.mat)
+
+  if (to.mat) {
     ret <- matrix(
       ret$val,
       byrow = TRUE,
@@ -40,7 +45,8 @@ pairwiseComp <- function(data, func.comp, func.data = NULL, to.mat = TRUE) {
         col = distinct(ret, var2)$var2
       )
     )
-  
+  }
+
   ret
 }
 
@@ -54,19 +60,22 @@ plotHeatmap <- function(data, name,
                         anno.cells = TRUE, cluster_rows = FALSE,
                         cluster_columns = FALSE, ...) {
   cell.func <- NULL
-  if (any(c(plot.triangle, anno.cells)))
+  if (any(c(plot.triangle, anno.cells))) {
     cell.func <- function(j, i, x, y, w, h, fill) {
-      if(i >= j || (!plot.triangle && i < j)) {
+      if (i >= j || (!plot.triangle && i < j)) {
         grid.rect(x, y, w, h, gp = gpar(fill = fill, col = fill))
-        
-        if (anno.cells)
+
+        if (anno.cells) {
           grid.text(sprintf("%.2f", data[i, j]), x, y, gp = gpar(fontsize = 10))
+        }
       }
     }
-  
-  if (plot.triangle && !plot.diag)
+  }
+
+  if (plot.triangle && !plot.diag) {
     data <- data[-1, -dim(data)[2]]
-  
+  }
+
   Heatmap(
     data,
     name = name,

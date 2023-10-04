@@ -232,7 +232,6 @@ createTiles <- function(sce, fullres.image, scale.factor.fname,
   if (!file.exists(scale.factor.fname)) stop("Scale factor file does not exist:\n", scale.factor.fname)
 
   if (is.null(tile.image.dir)) tile.image.dir <- tempdir(check = TRUE)
-  message(paste0("Tiles are stored in ", tile.image.dir))
 
   .barcodes <- as.vector(colData(sce)[seq_len(num.spots), "barcode"])
   flattened_tiles <- get_spot_subspot_tiles_from_image(
