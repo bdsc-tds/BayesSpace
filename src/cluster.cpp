@@ -799,10 +799,8 @@ iterate_deconv(
 
         if (jitter_scale == 0.0) {
           for (int r = 0; r < subspots; r++) {
-            error_j.row(r) = trans(
-                adaptive_mtx[r * n0 + j0] *
-                resize(error_j.row(r), error_j.n_cols, 1)
-            );
+            error_j.row(r) =
+                trans(adaptive_mtx[r * n0 + j0] * error_j.row(r).t());
           }
         }
 
@@ -974,3 +972,4 @@ iterate_deconv(
 
       return (out);
     }
+  }
