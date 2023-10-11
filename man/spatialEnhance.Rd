@@ -33,7 +33,7 @@ spatialEnhance(
 
 coreTune(sce, test.cores = detectCores(), test.times = 1, ...)
 
-adjustClusterLabels(sce, burn.in)
+adjustClusterLabels(sce, burn.in, end = NULL)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object containing the spatial data.}
@@ -114,6 +114,9 @@ the latter case, a list of values (power of 2) will be created}
 \item{test.times}{Times to repeat the benchmarking with microbenchmark.}
 
 \item{...}{Arguments for \code{spatialEnhance} (except for cores).}
+
+\item{end}{The index to the last sample to be taken into account. By default 
+it is \code{NULL} where all samples after \code{burn.in} are used.}
 }
 \value{
 \code{spatialEnhance} returns a new SingleCellExperiment object.

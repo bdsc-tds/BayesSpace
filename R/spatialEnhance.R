@@ -55,6 +55,8 @@
 #' @param test.cores Either a list of, or a maximum number of cores to test. In
 #'   the latter case, a list of values (power of 2) will be created
 #' @param test.times Times to repeat the benchmarking with microbenchmark.
+#' @param end The index to the last sample to be taken into account. By default 
+#'   it is \code{NULL} where all samples after \code{burn.in} are used.
 #' @param ... Arguments for \code{spatialEnhance} (except for cores).
 #'
 #' @return
@@ -334,7 +336,7 @@ coreTune <- function(sce, test.cores = detectCores(), test.times = 1, ...) {
 
 #' @export
 #' @rdname spatialEnhance
-adjustClusterLabels <- function(sce, burn.in) {
+adjustClusterLabels <- function(sce, burn.in, end = NULL) {
   zsamples <- mcmcChain(sce, "z")
   n_iter <- nrow(zsamples) - 1 # this is technically n_iters / 100
 
@@ -342,9 +344,12 @@ adjustClusterLabels <- function(sce, burn.in) {
   if (burn.in < 1) {
     burn.in <- as.integer(n_iter * burn.in)
   }
+  
+  if (is.null(end)) end <- n_iter
+  stopifnot(burn.in < end && end <= n_iter)
 
-  zs <- zsamples[seq(burn.in, n_iter + 1), ]
-  if (burn.in == n_iter + 1) {
+  zs <- zsamples[seq(burn.in + 1, end + 1), ]
+  if (burn.in == end + 1) {
     labels <- matrix(zs, nrow = 1)
   } else {
     labels <- apply(zs, 2, Mode)
