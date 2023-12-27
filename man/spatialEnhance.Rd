@@ -10,8 +10,8 @@ spatialEnhance(
   sce,
   q,
   platform = c("Visium", "ST"),
-  use.dimred = "PCA",
-  d = 15,
+  use.dimred = list(PCA = seq_len(15)),
+  subspot.d = seq_len(5),
   init = NULL,
   init.method = c("spatialCluster", "mclust", "kmeans"),
   model = c("t", "normal"),
@@ -33,7 +33,7 @@ spatialEnhance(
 
 coreTune(sce, test.cores = detectCores(), test.times = 1, ...)
 
-adjustClusterLabels(sce, burn.in)
+adjustClusterLabels(sce, burn.in, end = NULL)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object containing the spatial data.}
@@ -47,10 +47,16 @@ parameter is optional when analyzing SingleCellExperiments processed using
 \code{\link{spatialCluster}}, as this information is included in their
 metadata.}
 
-\item{use.dimred}{Name of a reduced dimensionality result in
-\code{reducedDims(sce)}. If provided, cluster on these features directly.}
+\item{use.dimred}{A named list with vectors of numbers of top principal
+components to use from spot-level data when clustering, named after the
+names of several reduced dimensionality results in \code{reducedDims(sce)}
+or \code{metadata(sce)$BayesSpace.data}. They must share the same number
+of rows and row names. If provided, cluster on these features directly.}
 
-\item{d}{Number of top principal components to use when clustering.}
+\item{subspot.d}{A vector of principal components from the corresponding H&E
+image to use during the clustering on the subspot-level, if such data is
+available (by default \code{seq_len(5)}; set to \code{NULL} or \code{0}
+if no such data).}
 
 \item{init}{Initial cluster assignments for spots.}
 
@@ -108,13 +114,16 @@ the latter case, a list of values (power of 2) will be created}
 \item{test.times}{Times to repeat the benchmarking with microbenchmark.}
 
 \item{...}{Arguments for \code{spatialEnhance} (except for cores).}
+
+\item{end}{The index to the last sample to be taken into account. By default 
+it is \code{NULL} where all samples after \code{burn.in} are used.}
 }
 \value{
 \code{spatialEnhance} returns a new SingleCellExperiment object.
   By default, the \code{assays} of this object are empty, and the enhanced
   resolution PCs are stored as a reduced dimensionality result accessible
   with \code{reducedDim(sce, 'PCA')}.
-  
+
 \code{coresTune} returns the output of \code{microbenchmark}.
 
 \code{adjustClusterLabels} adjusts the cluster labels from the MCMC samples

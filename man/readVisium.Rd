@@ -3,12 +3,42 @@
 \name{readVisium}
 \alias{readVisium}
 \alias{read10Xh5}
+\alias{createTiles}
 \alias{counts2h5}
 \title{Load a Visium spatial dataset as a SingleCellExperiment.}
 \usage{
-readVisium(dirname)
+readVisium(
+  dirname,
+  fullres.image = NULL,
+  tile.image.dir = NULL,
+  init.backend = TRUE,
+  shutdown.backend = TRUE,
+  cores = 1,
+  num.spots = -1
+)
 
-read10Xh5(dirname, fname = "filtered_feature_bc_matrix.h5")
+read10Xh5(
+  dirname,
+  fname = "filtered_feature_bc_matrix.h5",
+  fullres.image = NULL,
+  tile.image.dir = NULL,
+  init.backend = TRUE,
+  shutdown.backend = TRUE,
+  cores = 1,
+  num.spots = -1
+)
+
+createTiles(
+  sce,
+  fullres.image,
+  scale.factor.fname,
+  tile.image.dir = NULL,
+  num.spots = dim(sce)[2],
+  init.backend = TRUE,
+  shutdown.backend = TRUE,
+  cores = 1,
+  verbose = FALSE
+)
 
 counts2h5(dirname)
 }
@@ -23,8 +53,15 @@ must also contain a file for spot positions at
 (To understand the output directory, refer to the corresponding
 \href{https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/output/overview}{10X Genomics help page}.)}
 
+\item{fullres.image}{Single H&E brightfield image in either TIFF or JPG
+format; used as input to "spaceranger count".}
+
+\item{tile.image.dir}{Path to the directory of tile images.}
+
 \item{fname}{File name of the h5 file. It should be inside \code{dirname}.
 (By default "filtered_feature_bc_matrix.h5")}
+
+\item{scale.factor.fname}{File name of the scale factor.}
 }
 \value{
 SingleCellExperiment containing the counts matrix in \code{counts}

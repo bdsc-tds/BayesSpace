@@ -53,7 +53,7 @@ For best results, \code{Ychange} should average between 0.25 and 0.40.
 \examples{
 set.seed(149)
 sce <- exampleSCE()
-sce <- spatialCluster(sce, 7, nrep=100, burn.in=10, save.chain=TRUE)
+sce <- spatialCluster(sce, 7, nrep = 100, burn.in = 10, save.chain = TRUE)
 chain <- mcmcChain(sce)
 removeChain(sce)
 
