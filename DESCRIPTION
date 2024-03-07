@@ -49,7 +49,7 @@ LinkingTo:
     RcppDist,
     RcppProgress
 NeedsCompilation: yes
-SystemRequirements: C++11
+SystemRequirements: C++17
 Encoding: UTF-8
 Suggests: 
     testthat,
