@@ -299,7 +299,7 @@ deconvolve <- function(Y, positions, xdist, ydist, scalef, q, spot_neighbors, in
   cdata$array_col <- cdata$spot.col + rep(offsets[, 1], each = n_spots)
   cdata$array_row <- cdata$spot.row + rep(offsets[, 2], each = n_spots)
 
-  cols <- c("spot.idx", "subspot.idx", "spot.row", "spot.col", "array_row", "array_col", "pxl_row_in_fullres", "pxl_col_in_fullres")
+  cols <- c("spot.idx", "spot.neighbors", "subspot.idx", "subspot.neighbors", "spot.row", "spot.col", "array_row", "array_col", "pxl_row_in_fullres", "pxl_col_in_fullres")
   cdata[, cols]
 }
 
@@ -441,7 +441,6 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "VisiumHD", "ST"),
   metadata(enhanced)$BayesSpace.data <- list()
   metadata(enhanced)$BayesSpace.data$platform <- platform
   metadata(enhanced)$BayesSpace.data$is.enhanced <- TRUE
-  metadata(enhanced)$BayesSpace.data$df_j <- deconv$df_j
 
   enhanced
 }
