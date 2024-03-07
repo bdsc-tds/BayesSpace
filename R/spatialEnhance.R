@@ -129,7 +129,7 @@ deconvolve <- function(Y, positions, xdist, ydist, scalef, q, spot_neighbors, in
   init1 <- rep(init, subspots)
   Y2 <- Y[rep(seq_len(n0), subspots), ] # rbind 6 or 9 times
   positions2 <- positions[rep(seq_len(n0), subspots), ] # rbind 7 times
-
+  
   shift <- .make_subspots(platform, xdist, ydist, scalef)
   shift_long <- shift$shift[rep(seq_len(subspots), each = n0), ]
   positions2[, "x"] <- positions2[, "x"] + shift_long[, "x"]
@@ -225,6 +225,74 @@ deconvolve <- function(Y, positions, xdist, ydist, scalef, q, spot_neighbors, in
       by = 1 / num_subspots_per_edge
     ) - 1 / 2,
     dist = tolerance / num_subspots_per_edge
+  )
+}
+
+#' Define offsets and Manhattan distances for each subspot layout.
+#'
+#' Hex spots are divided into 6 triangular subspots, square spots are divided
+#' into 9 squares. Offsets are relative to the spot center. A unit corresponds
+#' to the diameter of a spot.
+#' 
+#' Manhattan distance is used here instead of Euclidean to avoid numerical
+#' issues.
+#'
+#' @param platform The platform from which the data comes.
+#' @param scalef Scale factors of Visium data.
+#' @return Matrix of x and y offsets, one row per subspot
+#'
+#' @keywords internal
+#'
+#' @importFrom assertthat assert_that
+.make_subspots <- function(
+    platform, xdist, ydist, num_subspots_per_edge = 3, tolerance = 1.05
+) {
+  if (platform == "Visium") {
+    if (abs(xdist) >= abs(ydist)) {
+      stop("Unable to find neighbors of subspots. Please raise an issue to maintainers.")
+    }
+    
+    shift <- .make_subspot_offsets(6)
+  } else if (platform == "ST") {
+    vec <- .make_square_vec(3, tolerance)
+    
+    shift <- expand.grid(
+      list(
+        x = vec$vec,
+        y = vec$vec
+      )
+    )
+    
+    dist <- vec$dist
+  } else {
+    stop("Only data from Visium and ST currently supported.")
+  }
+
+  shift[, c("x", "y")] <- as.data.frame(t(
+    t(as.matrix(shift[, c("x", "y")])) * c(xdist, ydist)
+  ))
+  
+  if (platform == "Visium") {
+    dist <- max(rowSums(abs(shift))) * tolerance
+  }
+  
+  list(
+    shift = shift,
+    dist = dist
+  )
+}
+
+#' @keywords internal
+.make_square_vec <- function(num_subspots_per_edge, tolerance = 1.05) {
+  stopifnot(tolerance > 1)
+  
+  list(
+    vec = seq(
+      1/(2 * num_subspots_per_edge),
+      1,
+      by = 1/num_subspots_per_edge
+    ) - 1/2,
+    dist = tolerance/num_subspots_per_edge
   )
 }
 
@@ -463,12 +531,12 @@ coreTune <- function(sce, test.cores = detectCores(), test.times = 1, ...) {
     args["nrep"] <- 1000
     args["burn.in"] <- 100
   }
-
+  
   eff.args <- discard(
     names(args),
     function(x) x %in% c("save.chain", "chain.fname", "cores")
   )
-
+  
   if (length(test.cores) == 1) {
     cores <- as.integer(vapply(
       seq(
