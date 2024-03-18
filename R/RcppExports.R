@@ -17,7 +17,10 @@ iterate_t_vvv <- function(Y, df_j, nrep, n, d, gamma, q, init, mu0, lambda0, alp
     .Call(`_BayesSpace_iterate_t_vvv`, Y, df_j, nrep, n, d, gamma, q, init, mu0, lambda0, alpha, beta)
 }
 
-iterate_deconv <- function(subspot_positions, dist, spot_neighbors, Y, tdist, nrep, n, n0, d, gamma, q, init, subspots, verbose, jitter_scale, adapt_before, c, mu0, lambda0, alpha, beta, thread_num = 1L) {
-    .Call(`_BayesSpace_iterate_deconv`, subspot_positions, dist, spot_neighbors, Y, tdist, nrep, n, n0, d, gamma, q, init, subspots, verbose, jitter_scale, adapt_before, c, mu0, lambda0, alpha, beta, thread_num)
+iterate_deconv <- function(subspot_positions, dist, spot_neighbors, Y, tdist, nrep, n, n0, d, d_subspot, gamma, q, init, subspots, verbose, jitter_scale, adapt_before, c, mu0, lambda0, alpha, beta, thread_num = 1L) {
+    .Call(`_BayesSpace_iterate_deconv`, subspot_positions, dist, spot_neighbors, Y, tdist, nrep, n, n0, d, d_subspot, gamma, q, init, subspots, verbose, jitter_scale, adapt_before, c, mu0, lambda0, alpha, beta, thread_num)
 }
 
+get_spot_subspot_tiles_from_image <- function(barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips = TRUE, shutdown_vips = TRUE, thread_num = 1L, verbose = FALSE) {
+    .Call(`_BayesSpace_get_spot_subspot_tiles_from_image`, barcodes, spot_center_coordinates, spot_radius_pxl, fullres_image_file, tile_image_dir, init_vips, shutdown_vips, thread_num, verbose)
+}

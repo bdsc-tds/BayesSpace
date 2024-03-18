@@ -10,9 +10,15 @@
 #'   processed using \code{\link{readVisium}}, \code{\link{spatialPreprocess}},
 #'   or \code{\link{spatialCluster}}, as this information is included in their
 #'   metadata.
-#' @param use.dimred Name of a reduced dimensionality result in
-#'   \code{reducedDims(sce)}. If provided, cluster on these features directly.
-#' @param d Number of top principal components to use when clustering.
+#' @param use.dimred A named list with vectors of numbers of top principal
+#'   components to use from spot-level data when clustering, named after the
+#'   names of several reduced dimensionality results in \code{reducedDims(sce)}
+#'   or \code{metadata(sce)$BayesSpace.data}. They must share the same number
+#'   of rows and row names. If provided, cluster on these features directly.
+#' @param subspot.d A vector of principal components from the corresponding H&E
+#'   image to use during the clustering on the subspot-level, if such data is
+#'   available (by default \code{seq_len(5)}; set to \code{NULL} or \code{0}
+#'   if no such data).
 #' @param init Initial cluster assignments for spots.
 #' @param init.method If \code{init} is not provided, cluster the top \code{d}
 #'   PCs with this method to obtain initial cluster assignments.
@@ -49,6 +55,8 @@
 #' @param test.cores Either a list of, or a maximum number of cores to test. In
 #'   the latter case, a list of values (power of 2) will be created
 #' @param test.times Times to repeat the benchmarking with microbenchmark.
+#' @param end The index to the last sample to be taken into account. By default
+#'   it is \code{NULL} where all samples after \code{burn.in} are used.
 #' @param ... Arguments for \code{spatialEnhance} (except for cores).
 #'
 #' @return
@@ -103,63 +111,6 @@
 #'
 #' @name spatialEnhance
 NULL
-
-#' Wrapper around C++ \code{iterate_deconv()} function
-#'
-#' @return List of enhancement parameter values at each iteration
-#'
-#' @keywords internal
-#' @importFrom stats cov
-#' @importFrom purrr discard
-deconvolve <- function(Y, positions, xdist, ydist, scalef, q, spot_neighbors, init, nrep = 1000,
-                       model = "normal", platform = c("Visium", "VisiumHD", "ST"), verbose = TRUE,
-                       jitter_scale = 5, jitter_prior = 0.01, adapt.before = 100, mu0 = colMeans(Y), gamma = 2,
-                       lambda0 = diag(0.01, nrow = ncol(Y)), alpha = 1, beta = 0.01, cores = 1) {
-  d <- ncol(Y)
-  n0 <- nrow(Y)
-  Y <- as.matrix(Y)
-  c <- jitter_prior * 1 / (2 * mean(diag(cov(Y))))
-
-  positions <- as.matrix(positions)
-  colnames(positions) <- c("x", "y")
-
-  platform <- match.arg(platform)
-  subspots <- ifelse(platform == "Visium", 6, 9)
-
-  init1 <- rep(init, subspots)
-  Y2 <- Y[rep(seq_len(n0), subspots), ] # rbind 6 or 9 times
-  positions2 <- positions[rep(seq_len(n0), subspots), ] # rbind 7 times
-
-  shift <- .make_subspots(platform, xdist, ydist, scalef)
-  shift_long <- shift$shift[rep(seq_len(subspots), each = n0), ]
-  positions2[, "x"] <- positions2[, "x"] + shift_long[, "x"]
-  positions2[, "y"] <- positions2[, "y"] + shift_long[, "y"]
-  n <- nrow(Y2)
-
-  if (verbose) {
-    message("Fitting model...")
-  }
-  tdist <- (model == "t")
-  out <- iterate_deconv(
-    subspot_positions = positions2,
-    dist = as.numeric(shift$dist),
-    spot_neighbors = spot_neighbors,
-    Y = Y2, tdist = tdist, nrep = nrep, n = n, n0 = n0,
-    d = d, gamma = gamma, q = q, init = init1, subspots = subspots, verbose = verbose,
-    jitter_scale = jitter_scale, adapt_before = adapt.before, c = c, mu0 = mu0,
-    lambda0 = lambda0, alpha = alpha, beta = beta, thread_num = cores
-  )
-
-  # The indices of neighbors are 1-based.
-  out$df_j <- apply(
-    out$df_j,
-    1,
-    function(x) paste(sort(discard(x, function(y) y == 0)), collapse = ",")
-  )
-
-  out$positions <- positions2
-  out
-}
 
 #' Define offsets and Manhattan distances for each subspot layout.
 #'
@@ -309,7 +260,7 @@ deconvolve <- function(Y, positions, xdist, ydist, scalef, q, spot_neighbors, in
 #' @importFrom SummarizedExperiment rowData
 #' @importFrom assertthat assert_that
 spatialEnhance <- function(sce, q, platform = c("Visium", "VisiumHD", "ST"),
-                           use.dimred = "PCA", d = 15,
+                           use.dimred = list(PCA = seq_len(15)), subspot.d = seq_len(5),
                            init = NULL, init.method = c("spatialCluster", "mclust", "kmeans"),
                            model = c("t", "normal"), nrep = 200000, gamma = NULL,
                            mu0 = NULL, lambda0 = NULL, alpha = 1, beta = 0.01,
@@ -354,11 +305,27 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "VisiumHD", "ST"),
     xdist <- ydist <- 1
   }
 
-  inputs <- .prepare_inputs(sce,
-    use.dimred = use.dimred, d = d,
+  subspots <- ifelse(platform == "Visium", 6, 9)
+
+  ## Prepare for inputs
+  inputs <- .prepare_inputs(
+    sce,
+    q = q,
+    subspots = subspots,
+    use.dimred = use.dimred,
+    use.subspot.dimred = list(subspot_image_feats_pcs = subspot.d),
+    jitter_prior = jitter_prior,
+    init = init, init.method = init.method,
     positions = NULL, position.cols = position.cols,
-    xdist = xdist, ydist = ydist
+    xdist = xdist, ydist = ydist, platform = platform, verbose = verbose
   )
+
+  ## Coordinates to use to find neighbors
+  if (platform == "Visium") {
+    coord.names <- c("pxl_row_in_fullres", "pxl_col_in_fullres")
+  } else if (platform %in% c("VisiumHD", "ST")) {
+    coord.names <- c("array_row", "array_col")
+  }
 
   ## Initialize cluster assignments (use spatialCluster by default)
   if (is.null(init)) {
@@ -391,31 +358,36 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "VisiumHD", "ST"),
     }
   }
 
-  deconv <- deconvolve(inputs$PCs, inputs$positions,
-    nrep = nrep, gamma = gamma,
-    xdist = inputs$xdist, ydist = inputs$ydist, scalef = .bsData(sce, "scalef"),
-    q = q, spot_neighbors = sce$spot.neighbors, init = init, model = model,
-    platform = platform, verbose = verbose, jitter_scale = jitter_scale,
-    jitter_prior = jitter_prior, adapt.before = adapt.before, mu0 = mu0,
-    lambda0 = lambda0, alpha = alpha, beta = beta, cores = cores
-  )
+  ## Deconvolve
+  if (verbose) {
+    message("Fitting model...")
+  }
 
-  ## Create enhanced SCE
-  n_subspots_per <- ifelse(platform == "Visium", 6, 9)
-  cdata <- .make_subspot_coldata(deconv$positions, sce, n_subspots_per, sce$spot.neighbors, deconv$df_j)
-  enhanced <- SingleCellExperiment(
-    assays = list(),
-    rowData = rowData(sce), colData = cdata
+  deconv <- iterate_deconv(
+    subspot_positions = as.matrix(inputs$sce[coord.names]),
+    dist = as.numeric(inputs$dist),
+    spot_neighbors = inputs$sce$spot.neighbors,
+    Y = inputs$PCs, tdist = (model == "t"), nrep = nrep, n = nrow(inputs$PCs), n0 = nrow(inputs$PCs) / subspots,
+    d = inputs$d2enhance, d_subspot = ncol(inputs$PCs) - inputs$d2enhance, gamma = gamma, q = q, init = inputs$init, subspots = subspots, verbose = verbose,
+    jitter_scale = jitter_scale, adapt_before = adapt.before, c = inputs$c, mu0 = mu0,
+    lambda0 = lambda0, alpha = alpha, beta = beta, thread_num = cores
   )
 
   ## Scale burn.in period to thinned intervals, and
   ## add one to skip initialization values stored before first iteration
   burn.in <- (burn.in %/% thin) + 1
 
+  # The indices of neighbors are 1-based.
+  inputs$sce$subspot.neighbors <- apply(
+    deconv$df_j,
+    1,
+    function(x) paste(sort(discard(x, function(y) y == 0)), collapse = ",")
+  )
+
   ## Average PCs, excluding burn-in
   deconv_PCs <- Reduce(`+`, deconv$Y[-seq_len(burn.in)]) / (length(deconv$Y) - burn.in)
-  colnames(deconv_PCs) <- paste0("PC", seq_len(ncol(deconv_PCs)))
-  reducedDim(enhanced, "PCA") <- deconv_PCs
+  colnames(deconv_PCs) <- colnames(reducedDim(inputs$sce, "PCA"))
+  reducedDim(inputs$sce, "PCA") <- deconv_PCs
 
   ## Choose modal cluster label, excluding burn-in
   message(
@@ -429,20 +401,16 @@ spatialEnhance <- function(sce, q, platform = c("Visium", "VisiumHD", "ST"),
     labels <- apply(zs, 2, Mode)
   }
 
-  enhanced$spatial.cluster <- unname(labels)
+  inputs$sce$spatial.cluster <- unname(labels)
 
   if (save.chain) {
+    deconv$d2enhance <- inputs$d2enhance
     deconv <- .clean_chain(deconv, method = "enhance")
     params <- c("z", "mu", "lambda", "weights", "Y", "Ychange", "plogLik")
-    metadata(enhanced)$chain.h5 <- .write_chain(deconv, chain.fname, params)
+    metadata(inputs$sce)$chain.h5 <- .write_chain(deconv, chain.fname, params)
   }
 
-  ## Add metadata to new SingleCellExperiment object
-  metadata(enhanced)$BayesSpace.data <- list()
-  metadata(enhanced)$BayesSpace.data$platform <- platform
-  metadata(enhanced)$BayesSpace.data$is.enhanced <- TRUE
-
-  enhanced
+  inputs$sce
 }
 
 #' @export
@@ -457,17 +425,16 @@ coreTune <- function(sce, test.cores = detectCores(), test.times = 1, ...) {
   )
 
   args <- list(...)
+  eff.args <- discard(
+    names(args),
+    function(x) x %in% c("save.chain", "chain.fname", "cores")
+  )
 
   # Maximum 1000 iterations.
   if (("nrep" %in% names(args) && args["nrep"] > 1000) || !("nrep" %in% names(args))) {
     args["nrep"] <- 1000
     args["burn.in"] <- 100
   }
-
-  eff.args <- discard(
-    names(args),
-    function(x) x %in% c("save.chain", "chain.fname", "cores")
-  )
 
   if (length(test.cores) == 1) {
     cores <- as.integer(vapply(
@@ -519,7 +486,7 @@ coreTune <- function(sce, test.cores = detectCores(), test.times = 1, ...) {
 
 #' @export
 #' @rdname spatialEnhance
-adjustClusterLabels <- function(sce, burn.in) {
+adjustClusterLabels <- function(sce, burn.in, end = NULL) {
   zsamples <- mcmcChain(sce, "z")
   n_iter <- nrow(zsamples) - 1 # this is technically n_iters / 100
 
@@ -528,8 +495,11 @@ adjustClusterLabels <- function(sce, burn.in) {
     burn.in <- as.integer(n_iter * burn.in)
   }
 
-  zs <- zsamples[seq(burn.in, n_iter + 1), ]
-  if (burn.in == n_iter + 1) {
+  if (is.null(end)) end <- n_iter
+  stopifnot(burn.in < end && end <= n_iter)
+
+  zs <- zsamples[seq(burn.in + 1, end + 1), ]
+  if (burn.in == end + 1) {
     labels <- matrix(zs, nrow = 1)
   } else {
     labels <- apply(zs, 2, Mode)

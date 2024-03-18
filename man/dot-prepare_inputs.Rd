@@ -6,12 +6,21 @@
 \usage{
 .prepare_inputs(
   sce,
-  use.dimred = "PCA",
-  d = 15,
+  subspots,
+  use.dimred = list(PCA = seq_len(15)),
+  use.subspot.dimred = NULL,
+  jitter_prior = 0.3,
+  calc.neighbors = TRUE,
+  calc.init = TRUE,
+  q = NULL,
+  init = NULL,
+  init.method = c("spatialCluster", "mclust", "kmeans"),
   positions = NULL,
   position.cols = c("pxl_col_in_fullres", "pxl_row_in_fullres"),
   xdist = NULL,
-  ydist = NULL
+  ydist = NULL,
+  platform = c("Visium", "ST"),
+  verbose = FALSE
 )
 }
 \value{

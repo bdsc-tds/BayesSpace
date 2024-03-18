@@ -6,6 +6,11 @@
 #include <vector>
 #include <system_error>
 #include <iostream>
+#include <csignal>
+
+#define assertm(exp, msg) assert(((void) msg, exp))
+
+static volatile sig_atomic_t early_stop = 0;
 
 template <typename T>
 std::vector<T>
@@ -65,4 +70,21 @@ str_split(const std::string &str, const std::string &separator) {
   return ret;
 }
 
-#endif   // BAYESSPACE_UTILS_H
+template <typename T>
+void
+print_thread_hits(const std::vector<T> &arr) {
+  if (arr.size() > 0) {
+    for (size_t i = 0; i < arr.size(); i++)
+      std::cout << "[DEBUG] Thread " << i << " is hit " << arr[i]
+                << " times.\n";
+    std::cout << std::endl;
+  }
+}
+
+static void
+sig_handler(int _) {
+  (void) _;
+  std::cerr << "\nStopping..." << std::endl;
+
+  early_stop = 1;
+}
