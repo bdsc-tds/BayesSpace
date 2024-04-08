@@ -20,7 +20,7 @@ featurePlot(
 )
 }
 \arguments{
-\item{sce}{SingleCellExperiment. If \code{feature} is specified and is a 
+\item{sce}{SingleCellExperiment. If \code{feature} is specified and is a
 string, it must exist as a row in the specified assay of \code{sce}.}
 
 \item{feature}{Feature vector used to color each spot. May be the name of a
@@ -69,6 +69,7 @@ featurePlot(sce, "gene_2")
 }
 \seealso{
 Other spatial plotting functions: 
-\code{\link{clusterPlot}()}
+\code{\link{clusterPlot}()},
+\code{\link{imageFeaturePlot}()}
 }
 \concept{spatial plotting functions}

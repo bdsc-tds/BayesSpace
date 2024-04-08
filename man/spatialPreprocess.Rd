@@ -12,8 +12,7 @@ spatialPreprocess(
   skip.PCA = FALSE,
   log.normalize = TRUE,
   assay.type = "logcounts",
-  BSPARAM = ExactParam(),
-  BPPARAM = SerialParam()
+  BSPARAM = ExactParam()
 )
 }
 \arguments{
@@ -37,6 +36,16 @@ be omitted if log-normalization previously computed.}
 Leave as "logcounts" unless you explicitly pre-computed a different
 normalization and added it to \code{sce} under another assay. Note that we
 do not recommend running BayesSpace on PCs computed from raw counts.}
+
+\item{h2o.reproducible}{Whether to generate reproducible results from h2o.
+Default to \code{FALSE} for better performance.}
+
+\item{h2o.seed}{Only valid when \code{h2o.reproducible} is \code{TRUE}.}
+
+\item{h2o.max.mem}{The maximum amount of memory that h2o uses.}
+
+\item{n.PCs.image}{The number of PCs to be extracted from the image (if
+available).}
 
 \item{BSPARAM}{A \linkS4class{BiocSingularParam} object specifying which
 algorithm should be used to perform the PCA. By default, an exact PCA is

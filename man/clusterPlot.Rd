@@ -57,6 +57,7 @@ clusterPlot(sce)
 }
 \seealso{
 Other spatial plotting functions: 
-\code{\link{featurePlot}()}
+\code{\link{featurePlot}()},
+\code{\link{imageFeaturePlot}()}
 }
 \concept{spatial plotting functions}

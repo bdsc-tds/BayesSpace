@@ -11,10 +11,9 @@
 spatialEnhance(
   sce,
   q,
-  platform = c("Visium", "VisiumHD", "ST"),
+  platform = c("Visium", "ST"),
   use.dimred = "PCA",
   d = 15,
-  nsubspots.per.edge = 3,
   init = NULL,
   init.method = c("spatialCluster", "mclust", "kmeans"),
   model = c("t", "normal"),
@@ -37,10 +36,6 @@ spatialEnhance(
 coreTune(sce, test.cores = detectCores(), test.times = 1, ...)
 
 adjustClusterLabels(sce, burn.in)
-
-mapSubspot2Ref(sce, sce.ref, cores = 1)
-
-computeCorr(m1, m2, cores = 1)
 }
 \arguments{
 \item{sce}{A SingleCellExperiment object containing the spatial data.}
@@ -54,13 +49,13 @@ processed using \code{\link{readVisium}}, \code{\link{spatialPreprocess}},
 or \code{\link{spatialCluster}}, as this information is included in their
 metadata.}
 
-\item{use.dimred}{Name of a reduced dimensionality result in
-\code{reducedDims(sce)}. If provided, cluster on these features directly.}
+\item{use.dimred}{A named list with vectors of numbers of top principal
+components to use from spot-level data when clustering, named after the
+names of several reduced dimensionality results in \code{reducedDims(sce)}
+or \code{metadata(sce)$BayesSpace.data}. They must share the same number
+of rows and row names. If provided, cluster on these features directly.}
 
 \item{d}{Number of top principal components to use when clustering.}
-
-\item{nsubspots.per.edge}{Number of subspots per edge of the square. Only
-valid when \code{platform} is 'ST' or 'VisiumHD'.}
 
 \item{init}{Initial cluster assignments for spots.}
 
@@ -119,6 +114,9 @@ the latter case, a list of values (power of 2) will be created}
 \item{test.times}{Times to repeat the benchmarking with microbenchmark.}
 
 \item{...}{Arguments for \code{spatialEnhance} (except for cores).}
+
+\item{end}{The index to the last sample to be taken into account. By default 
+it is \code{NULL} where all samples after \code{burn.in} are used.}
 }
 \value{
 \code{spatialEnhance} returns a new SingleCellExperiment object.

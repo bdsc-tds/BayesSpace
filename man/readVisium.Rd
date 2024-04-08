@@ -3,19 +3,13 @@
 \name{readVisium}
 \alias{readVisium}
 \alias{read10Xh5}
+\alias{createTiles}
 \alias{counts2h5}
 \title{Load a Visium spatial dataset as a SingleCellExperiment.}
 \usage{
-readVisium(
-  dirname,
-  rm.feats.pat = c("^NegControl.*", "^BLANK.*", "^DEPRECATED.*")
-)
+readVisium(dirname)
 
-read10Xh5(
-  dirname,
-  fname = "filtered_feature_bc_matrix.h5",
-  rm.feats.pat = c("^NegControl.*", "^BLANK.*", "^DEPRECATED.*")
-)
+read10Xh5(dirname, fname = "filtered_feature_bc_matrix.h5")
 
 counts2h5(dirname)
 }
@@ -31,10 +25,10 @@ a file containing scale factors named \code{spatial/scalefactors_json.json}.
 (To understand the output directory, refer to the corresponding
 \href{https://support.10xgenomics.com/spatial-gene-expression/software/pipelines/latest/output/overview}{10X Genomics help page}.)}
 
-\item{rm.feats.pat}{Patterns for features (genes) to remove.}
-
 \item{fname}{File name of the h5 file. It should be inside \code{dirname}.
 (By default "filtered_feature_bc_matrix.h5")}
+
+\item{scale.factor.fname}{File name of the scale factor.}
 }
 \value{
 SingleCellExperiment containing the counts matrix in \code{counts}
